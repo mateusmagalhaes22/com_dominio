@@ -1,37 +1,81 @@
 import { Injectable } from '@nestjs/common';
 import { Workspace } from './workspace.entity';
+import { User } from '../users/user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class WorkspaceService {
-  private workspaces: Workspace[] = [];
-  private idCounter = 1;
+  constructor(
+    @InjectRepository(Workspace)
+    private readonly workspaceRepository: Repository<Workspace>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+  async createWithIds(adminUserId: number, userIds: number[]): Promise<Workspace> {
+    const adminUser = await this.userRepository.findOneBy({ id: adminUserId });
+    if (!adminUser) {
+      throw new Error('Admin user not found');
+    }
+    const users = userIds.length > 0 ? await this.userRepository.findByIds(userIds) : [];
+    const workspace = this.workspaceRepository.create({ adminUser, users });
+    const savedWorkspace = await this.workspaceRepository.save(workspace);
+    const fullWorkspace = await this.workspaceRepository.findOne({
+      where: { id: savedWorkspace.id },
+      relations: ['adminUser', 'users']
+    });
+    if (!fullWorkspace) {
+      throw new Error('Failed to create workspace');
+    }
+    return fullWorkspace;
+  }
 
   findAll(): Promise<Workspace[]> {
-    return Promise.resolve(this.workspaces);
+  return this.workspaceRepository.find({ relations: ['adminUser', 'users'] });
   }
 
   findOne(id: number): Promise<Workspace | null> {
-    const workspace = this.workspaces.find(w => w.id === id);
-    return Promise.resolve(workspace ?? null);
+    return this.workspaceRepository.findOne({
+      where: { id },
+      relations: ['adminUser', 'users']
+    });
   }
 
-  create(workspace: Workspace): Promise<Workspace> {
-    workspace.id = this.idCounter++;
-    this.workspaces.push(workspace);
-    return Promise.resolve(workspace);
+  async create(workspace: Workspace): Promise<Workspace> {
+    return this.workspaceRepository.save(workspace);
   }
 
-  update(id: number, workspace: Workspace): Promise<Workspace | null> {
-    const idx = this.workspaces.findIndex(w => w.id === id);
-    if (idx > -1) {
-      this.workspaces[idx] = { ...this.workspaces[idx], ...workspace };
-      return Promise.resolve(this.workspaces[idx]);
+  async update(id: number, workspace: { adminUser: number, users: number[] }): Promise<Workspace | null> {
+    let existingWorkspace = await this.workspaceRepository.findOne({
+      where: { id },
+      relations: ['adminUser', 'users']
+    });
+    
+    if (!existingWorkspace) {
+      return null;
     }
-    return Promise.resolve(null);
+    
+    if (workspace.adminUser) {
+      const newAdminUser = await this.userRepository.findOneBy({ id: workspace.adminUser });
+      if (!newAdminUser) {
+        throw new Error('Admin user not found');
+      }
+      existingWorkspace.adminUser = newAdminUser;
+    }
+
+    if (workspace.users) {
+      const newUsers = await this.userRepository.findByIds(workspace.users);
+      existingWorkspace.users = newUsers;
+    }
+
+    await this.workspaceRepository.save(existingWorkspace);
+    return this.workspaceRepository.findOne({
+      where: { id },
+      relations: ['adminUser', 'users']
+    });
   }
 
-  remove(id: number): Promise<void> {
-    this.workspaces = this.workspaces.filter(w => w.id !== id);
-    return Promise.resolve();
+  async remove(id: number): Promise<void> {
+    await this.workspaceRepository.delete(id);
   }
 }
