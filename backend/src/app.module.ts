@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
 import { Workspace } from './workspaces/workspace.entity';
 import { ConfigModule } from '@nestjs/config';
+import { LoginModule } from './login/login.module';
 
 @Module({
   imports: [
@@ -18,11 +19,12 @@ import { ConfigModule } from '@nestjs/config';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
-      entities: [User, Workspace],
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
     UsersModule,
     WorkspacesModule,
+    LoginModule,
   ],
   controllers: [AppController],
   providers: [AppService],

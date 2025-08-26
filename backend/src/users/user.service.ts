@@ -2,13 +2,34 @@ import { Injectable } from '@nestjs/common';
 import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { loginConstants } from '../login/constants';
 
 @Injectable()
 export class UserService {
+  
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
+
+  async onModuleInit() {
+    const count = await this.userRepository.count();
+    const hashedPassword = await bcrypt.hash(loginConstants.adminPassword, 10);
+    if (count === 0) {
+      const admin = this.userRepository.create({
+        name: 'Admin',
+        email: loginConstants.adminUser,
+        password: hashedPassword,
+      });
+      await this.userRepository.save(admin);
+      console.log('🚀 Usuário admin criado');
+    }
+  }
+
+  findByEmail(email: string) {
+    return this.userRepository.findOne({ where: { email } });
+  }
 
   findAll(): Promise<User[]> {
     return this.userRepository.find({
@@ -24,6 +45,7 @@ export class UserService {
   }
 
   async create(user: User): Promise<User> {
+    user.password = await bcrypt.hash(user.password, 10);
     return this.userRepository.save(user);
   }
 
