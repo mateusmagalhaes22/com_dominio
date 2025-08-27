@@ -23,15 +23,14 @@ export class WorkspaceService {
     private readonly maintenanceRepository: Repository<Maintenance>,
   ) {}
 
-  async createWithIds(adminUserId: number, userIds: number[]): Promise<Workspace> {
+  async create(adminUserId: number): Promise<Workspace> {
     const adminUser = await this.userRepository.findOneBy({ id: adminUserId });
     
     if (!adminUser) {
       throw new Error('Admin user not found');
     }
     
-    const users = userIds.length > 0 ? await this.userRepository.findByIds(userIds) : [];
-    const workspace = this.workspaceRepository.create({ adminUser, users });
+    const workspace = this.workspaceRepository.create({ adminUser });
     const savedWorkspace = await this.workspaceRepository.save(workspace);
     
     const fullWorkspace = await this.workspaceRepository.findOne({
@@ -55,10 +54,6 @@ export class WorkspaceService {
       where: { id },
       relations: ['adminUser', 'users']
     });
-  }
-
-  async create(workspace: Workspace): Promise<Workspace> {
-    return this.workspaceRepository.save(workspace);
   }
 
   async update(id: number, workspace: { adminUser: number, users: number[] }): Promise<Workspace | null> {

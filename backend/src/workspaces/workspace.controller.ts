@@ -25,12 +25,6 @@ export class WorkspaceController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post()
-  create(@Body() body: { adminUser: number, users: number[] }): Promise<Workspace> {
-    return this.workspaceService.createWithIds(body.adminUser, body.users);
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Put(':id')
   async update(@Param('id') id: string, @Body() body: { adminUser: number, users: number[] }): Promise<WorkspaceDto | null> {
     const workspace = await this.workspaceService.update(+id, body);
