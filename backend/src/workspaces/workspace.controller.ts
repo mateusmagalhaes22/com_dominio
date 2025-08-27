@@ -4,6 +4,7 @@ import { Workspace } from './workspace.entity';
 import { WorkspaceDto } from './workspace.dto';
 import { JwtAuthGuard } from 'src/login/jwt-auth.guard';
 import { CondominiumDto } from 'src/workspaces/condominium/condominium-dto';
+import { MaintenanceDto } from './condominium/maintenances/maintenance-dto';
 
 @Controller('workspaces')
 export class WorkspaceController {
@@ -77,5 +78,38 @@ export class WorkspaceController {
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
   ) {
     return this.workspaceService.removeCondominium(id, condominiumId);
+  }
+
+  @Get(':workspaceId/condominiums/:condominiumId/maintenances')
+  findMaintenances(
+    @Param('workspaceId', ParseIntPipe) workspaceId: number,
+    @Param('condominiumId', ParseIntPipe) condominiumId: number,
+  ) {
+    return this.workspaceService.findMaintenances(workspaceId, condominiumId);
+  }
+
+  @Post(':id/condominiums/:condominiumId/maintenances')
+  createMaintenance(
+    @Param('condominiumId', ParseIntPipe) condominiumId: number,
+    @Body() body: { description: string; date: Date; cost: number },
+  ) {
+    return this.workspaceService.createMaintenance(condominiumId, body);
+  }
+
+  @Put(':workspaceId/condominiums/:condominiumId/maintenances/:maintenanceId')
+  updateMaintenance(
+    @Param('condominiumId', ParseIntPipe) condominiumId: number,
+    @Param('maintenanceId', ParseIntPipe) maintenanceId: number,
+    @Body() dto: MaintenanceDto,
+  ) {
+    return this.workspaceService.updateMaintenance(condominiumId, maintenanceId, dto);
+  }
+
+  @Delete(':workspaceId/condominiums/:condominiumId/maintenances/:maintenanceId')
+  deleteMaintenance(
+    @Param('condominiumId', ParseIntPipe) condominiumId: number,
+    @Param('maintenanceId', ParseIntPipe) maintenanceId: number,
+  ) {
+    return this.workspaceService.removeMaintenance(condominiumId, maintenanceId);
   }
 }

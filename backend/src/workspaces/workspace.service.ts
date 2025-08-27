@@ -4,6 +4,7 @@ import { User } from '../users/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Condominium } from 'src/workspaces/condominium/condominium.entity';
+import { Maintenance } from './condominium/maintenances/maintenance.entity';
 
 @Injectable()
 export class WorkspaceService {
@@ -17,6 +18,9 @@ export class WorkspaceService {
 
     @InjectRepository(Condominium)
     private readonly condominiumRepository: Repository<Condominium>,
+
+    @InjectRepository(Maintenance)
+    private readonly maintenanceRepository: Repository<Maintenance>,
   ) {}
 
   async createWithIds(adminUserId: number, userIds: number[]): Promise<Workspace> {
@@ -133,5 +137,43 @@ export class WorkspaceService {
 
   removeCondominium(id: number, condominiumId: number) {
     return this.condominiumRepository.delete({ id: condominiumId, workspace: { id } });
+  }
+
+  async createMaintenance(condominiumId: number, data: Partial<Maintenance>): Promise<Maintenance> {
+    const condominium = await this.condominiumRepository.findOne({ where: { id: condominiumId } });
+
+    if (!condominium) {
+      throw new NotFoundException(`Workspace with ID ${condominiumId} not found`);
+    }
+
+    const maintenance = this.maintenanceRepository.create({
+      ...data,
+      condominium,
+    });
+
+    return this.maintenanceRepository.save(maintenance);
+  }
+
+  async findMaintenances(workspaceId: number, condominiumId: number): Promise<Maintenance[]> {
+    const condominium = await this.condominiumRepository.findOne({
+      where: { id: condominiumId, workspace: { id: workspaceId } },
+      relations: ['maintenances'],
+    });
+
+    if (!condominium) {
+      throw new NotFoundException(`Condominium with ID ${condominiumId} not found`);
+    }
+
+    return condominium.maintenances;
+  }
+
+  updateMaintenance(condominiumId: number, maintenanceId: number, data: Partial<Maintenance>) {
+    return this.maintenanceRepository.update({ id: maintenanceId, condominium: { id: condominiumId } }, data).then(() => {
+      return this.maintenanceRepository.findOne({ where: { id: maintenanceId, condominium: { id: condominiumId } } });
+    });
+  }
+
+  removeMaintenance(condominiumId: number, maintenanceId: number) {
+    return this.maintenanceRepository.delete({ id: maintenanceId, condominium: { id: condominiumId } });
   }
 }

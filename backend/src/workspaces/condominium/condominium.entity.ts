@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Workspace } from 'src/workspaces/workspace.entity';
+import { Maintenance } from './maintenances/maintenance.entity';
 
 @Entity()
 export class Condominium {
@@ -14,6 +15,9 @@ export class Condominium {
 
   @Column()
   address: String;
+
+  @OneToMany(() => Maintenance, (maintenance) => maintenance.condominium)
+  maintenances: Maintenance[];
 
   @ManyToOne(() => Workspace, (workspace) => workspace.condominiums, { onDelete: 'CASCADE' })
   workspace: Workspace;
