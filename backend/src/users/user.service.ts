@@ -49,9 +49,10 @@ export class UserService {
   async create(user: User): Promise<User> {
     user.password = await bcrypt.hash(user.password, 10);
 
-    const createdUser = this.userRepository.save(user);
+    const createdUser = await this.userRepository.save(user);
+    
     this.workspaceRepository.create({ adminUser: user });
-    this.workspaceRepository.save({ adminUser: user });
+    await this.workspaceRepository.save({ adminUser: user });
 
     return createdUser;
   }

@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseIntPipe, UseInterceptors, Headers, BadRequestException } from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
-import { Workspace } from './workspace.entity';
 import { WorkspaceDto } from './workspace.dto';
 import { JwtAuthGuard } from 'src/login/jwt-auth.guard';
 import { CondominiumDto } from 'src/workspaces/condominium/condominium-dto';
 import { MaintenanceDto } from './condominium/maintenances/maintenance-dto';
+import { IdempotencyInterceptor } from 'src/idempotency/idempotency.interceptor';
 
 @Controller('workspaces')
 export class WorkspaceController {
@@ -12,28 +12,40 @@ export class WorkspaceController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll(): Promise<WorkspaceDto[]> {
+  async findAll(@Headers('Idempotency-Key') idempotencyKey: string): Promise<WorkspaceDto[]> {
+    if (!idempotencyKey) {
+      throw new BadRequestException('Idempotency-Key header is required');
+    }
     const workspaces = await this.workspaceService.findAll();
     return workspaces.map(w => new WorkspaceDto(w));
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<WorkspaceDto | null> {
+  async findOne(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string): Promise<WorkspaceDto | null> {
+    if (!idempotencyKey) {
+      throw new BadRequestException('Idempotency-Key header is required');
+    }
     const workspace = await this.workspaceService.findOne(+id);
     return workspace ? new WorkspaceDto(workspace) : null;
   }
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: { adminUser: number, users: number[] }): Promise<WorkspaceDto | null> {
+  async update(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string, @Body() body: { adminUser: number, users: number[] }): Promise<WorkspaceDto | null> {
+    if (!idempotencyKey) {
+      throw new BadRequestException('Idempotency-Key header is required');
+    }
     const workspace = await this.workspaceService.update(+id, body);
     return workspace ? new WorkspaceDto(workspace) : null;
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string): Promise<void> {
+  async remove(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string): Promise<void> {
+    if (!idempotencyKey) {
+      throw new BadRequestException('Idempotency-Key header is required');
+    }
     return this.workspaceService.remove(+id);
   }
 
@@ -48,9 +60,10 @@ export class WorkspaceController {
   }
 
   @Post(':id/condominiums')
+  @UseInterceptors(IdempotencyInterceptor)
   createCondominium(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CondominiumDto,
+    @Body() dto: CondominiumDto
   ) {
     const { workspaceId, ...data } = dto;
     return this.workspaceService.createCondominium(id, data);
@@ -83,9 +96,10 @@ export class WorkspaceController {
   }
 
   @Post(':id/condominiums/:condominiumId/maintenances')
+  @UseInterceptors(IdempotencyInterceptor)
   createMaintenance(
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
-    @Body() body: { description: string; date: Date; cost: number },
+    @Body() body: { description: string; date: Date; cost: number }
   ) {
     return this.workspaceService.createMaintenance(condominiumId, body);
   }
