@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   Injectable,
   NestInterceptor,
+  BadRequestException,
 } from '@nestjs/common';
 import { Observable, of } from 'rxjs';
 import { Repository } from 'typeorm';
@@ -22,7 +23,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
     const key = request.headers['idempotency-key'];
 
     if (!key) {
-      return next.handle();
+      throw new BadRequestException('Idempotency-Key header is required');
     }
 
     const existing = await this.idempotencyRepo.findOne({ where: { key } });
