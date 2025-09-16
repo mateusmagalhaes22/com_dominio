@@ -27,7 +27,7 @@ export class WorkspaceService {
     const adminUser = await this.userRepository.findOneBy({ id: adminUserId });
     
     if (!adminUser) {
-      throw new Error('Admin user not found');
+      throw new NotFoundException('Admin user not found');
     }
     
     const workspace = this.workspaceRepository.create({ adminUser });
@@ -39,7 +39,7 @@ export class WorkspaceService {
     });
     
     if (!fullWorkspace) {
-      throw new Error('Failed to create workspace');
+      throw new NotFoundException('Failed to create workspace');
     }
     
     return fullWorkspace;
@@ -69,7 +69,7 @@ export class WorkspaceService {
     if (workspace.adminUser) {
       const newAdminUser = await this.userRepository.findOneBy({ id: workspace.adminUser });
       if (!newAdminUser) {
-        throw new Error('Admin user not found');
+        throw new NotFoundException('Admin user not found');
       }
       existingWorkspace.adminUser = newAdminUser;
     }

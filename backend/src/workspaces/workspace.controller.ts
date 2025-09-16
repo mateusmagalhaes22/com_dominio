@@ -12,40 +12,28 @@ export class WorkspaceController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll(@Headers('Idempotency-Key') idempotencyKey: string): Promise<WorkspaceDto[]> {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
+  async findAll(): Promise<WorkspaceDto[]> {
     const workspaces = await this.workspaceService.findAll();
     return workspaces.map(w => new WorkspaceDto(w));
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string): Promise<WorkspaceDto | null> {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
+  async findOne(@Param('id') id: string): Promise<WorkspaceDto | null> {
     const workspace = await this.workspaceService.findOne(+id);
     return workspace ? new WorkspaceDto(workspace) : null;
   }
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string, @Body() body: { adminUser: number, users: number[] }): Promise<WorkspaceDto | null> {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
+  async update(@Param('id') id: string, @Body() body: { adminUser: number, users: number[] }): Promise<WorkspaceDto | null> {
     const workspace = await this.workspaceService.update(+id, body);
     return workspace ? new WorkspaceDto(workspace) : null;
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async remove(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string): Promise<void> {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
+  async remove(@Param('id') id: string): Promise<void> {
     return this.workspaceService.remove(+id);
   }
 

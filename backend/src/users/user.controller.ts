@@ -11,20 +11,14 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll(@Headers('Idempotency-Key') idempotencyKey: string): Promise<UserDto[]> {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
+  async findAll(): Promise<UserDto[]> {
     const users = await this.userService.findAll();
     return users.map(u => new UserDto(u));
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string): Promise<UserDto> {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
+  async findOne(@Param('id') id: string): Promise<UserDto> {
     const user = await this.userService.findOne(+id);
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -40,10 +34,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string, @Body() user: User): Promise<User> {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
+  async update(@Param('id') id: string, @Body() user: User): Promise<User> {
     const updatedUser = await this.userService.update(+id, user);
     if (!updatedUser) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -53,10 +44,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async remove(@Headers('Idempotency-Key') idempotencyKey: string, @Param('id') id: string): Promise<void> {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
+  async remove(@Param('id') id: string): Promise<void> {
     return this.userService.remove(+id);
   }
 }
