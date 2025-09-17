@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:24.8.0-alpine3.22
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production

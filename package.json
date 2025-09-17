@@ -4,5 +4,11 @@
     "@nestjs/typeorm": "^11.0.0",
     "pg": "^8.16.3",
     "typeorm": "^0.3.26"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "@vendia/serverless-express": "^4.12.6",
+    "serverless": "^3.40.0",
+    "serverless-plugin-typescript": "^2.1.5"
   }
 }
