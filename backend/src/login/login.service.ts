@@ -10,7 +10,7 @@ export class LoginService {
 
     constructor(private readonly userService: UserService, private jwtService: JwtService) {}
 
-    async authenticate(user: LoginUserDto): Promise<String> {
+    async authenticate(user: LoginUserDto): Promise<{ access_token: string }> {
         
         const foundUser = await this.userService.findByEmail(user.email);
 
@@ -24,6 +24,8 @@ export class LoginService {
         }
 
         const payload = { username: user.email, sub: foundUser.id };
-        return await this.jwtService.signAsync(payload, { expiresIn: jwtConstants.expiresIn });
+        const token = await this.jwtService.signAsync(payload, { expiresIn: jwtConstants.expiresIn });
+        
+        return { access_token: token };
     }
 }
