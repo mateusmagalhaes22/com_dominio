@@ -28,7 +28,7 @@ export default function LoginPage() {
         password: formData.password
       };
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}login`;
+      const apiUrl = `${process.env.API_URL}login`;
 
       const res = await fetch(apiUrl, {
         method: "POST",
