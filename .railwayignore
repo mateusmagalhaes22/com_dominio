@@ -1,0 +1,7 @@
+# Railway Ignore - não incluir estes arquivos/pastas no build
+comdominio/
+.git/
+*.md
+.env.production
+generate-env.sh
+.gitignore
