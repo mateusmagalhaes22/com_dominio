@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar todas as dependências (incluindo dev dependencies para o build)
-RUN npm ci --legacy-peer-deps
+# Usar npm ci se package-lock.json existir, senão usar npm install
+RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
 
 # Copiar código fonte
 COPY . .
@@ -24,7 +25,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar apenas dependências de produção
-RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
+# Usar npm ci se package-lock.json existir, senão usar npm install
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev --legacy-peer-deps; else npm install --omit=dev --legacy-peer-deps; fi && npm cache clean --force
 
 # Copiar os arquivos compilados do stage anterior
 COPY --from=builder /app/dist ./dist
