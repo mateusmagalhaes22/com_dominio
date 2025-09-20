@@ -28,7 +28,13 @@ export default function LoginPage() {
         password: formData.password
       };
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}login`;
+      // Fallback para quando a variável de ambiente não está configurada na Vercel
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/';
+      const apiUrl = `${baseUrl}login`;
+      
+      // Debug para verificar a URL (remover após configurar a variável na Vercel)
+      console.log('API URL:', apiUrl);
+      console.log('Base URL from env:', process.env.NEXT_PUBLIC_API_URL);
 
       const res = await fetch(apiUrl, {
         method: "POST",
