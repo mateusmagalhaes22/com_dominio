@@ -32,8 +32,10 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       PORT: ${PORT}
+      CORS_ORIGINS: ${CORS_ORIGINS}
       ADMIN_USER: ${ADMIN_USER}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_KEY: ${ADMIN_KEY}
     depends_on:
       db:
         condition: service_healthy

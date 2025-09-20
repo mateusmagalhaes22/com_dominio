@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException, UseGuards, UseInterceptors, Headers, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException, UseGuards, UseInterceptors, Headers, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './user.entity';
 import { UserDto } from './user.dto';
@@ -28,7 +28,13 @@ export class UserController {
 
   @Post()
   @UseInterceptors(IdempotencyInterceptor)
-  async create(@Body() user: User): Promise<UserDto> {
+  async create(@Headers('admin-key') adminKey: string, @Body() user: User): Promise<UserDto> {
+    const validAdminKey = process.env.ADMIN_KEY;
+    
+    if (!adminKey || adminKey !== validAdminKey) {
+      throw new UnauthorizedException('Invalid admin key for user creation');
+    }
+
     return new UserDto(await this.userService.create(user));
   }
 
