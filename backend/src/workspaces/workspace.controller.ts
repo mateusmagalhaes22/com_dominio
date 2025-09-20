@@ -37,16 +37,19 @@ export class WorkspaceController {
     return this.workspaceService.remove(+id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id/condominiums')
   findCondominiums(@Param('id', ParseIntPipe) id: number) {
     return this.workspaceService.findCondominiums(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id/condominiums/:condominiumId')
   findCondominiumById(@Param('id', ParseIntPipe) workspaceId: number, @Param('condominiumId', ParseIntPipe) condominiumId: number) {
     return this.workspaceService.findCondominiumsByWorkspaceIdAndCondominiumId(workspaceId, condominiumId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post(':id/condominiums')
   @UseInterceptors(IdempotencyInterceptor)
   createCondominium(
@@ -57,6 +60,7 @@ export class WorkspaceController {
     return this.workspaceService.createCondominium(id, data);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put(':id/condominiums/:condominiumId')
   updateCondominium(
     @Param('id', ParseIntPipe) id: number,
@@ -67,6 +71,7 @@ export class WorkspaceController {
     return this.workspaceService.updateCondominium(id, condominiumId, data);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id/condominiums/:condominiumId')
   deleteCondominium(
     @Param('id', ParseIntPipe) id: number,
@@ -75,6 +80,7 @@ export class WorkspaceController {
     return this.workspaceService.removeCondominium(id, condominiumId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':workspaceId/condominiums/:condominiumId/maintenances')
   findMaintenances(
     @Param('workspaceId', ParseIntPipe) workspaceId: number,
@@ -83,6 +89,7 @@ export class WorkspaceController {
     return this.workspaceService.findMaintenances(workspaceId, condominiumId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post(':id/condominiums/:condominiumId/maintenances')
   @UseInterceptors(IdempotencyInterceptor)
   createMaintenance(
@@ -92,6 +99,7 @@ export class WorkspaceController {
     return this.workspaceService.createMaintenance(condominiumId, body);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put(':workspaceId/condominiums/:condominiumId/maintenances/:maintenanceId')
   updateMaintenance(
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
@@ -101,6 +109,7 @@ export class WorkspaceController {
     return this.workspaceService.updateMaintenance(condominiumId, maintenanceId, dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':workspaceId/condominiums/:condominiumId/maintenances/:maintenanceId')
   deleteMaintenance(
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
