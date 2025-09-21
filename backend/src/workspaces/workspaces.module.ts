@@ -12,5 +12,6 @@ import { IdempotencyModule } from 'src/idempotency/idempotency.module';
   imports: [TypeOrmModule.forFeature([Workspace, User, Condominium, Maintenance]), IdempotencyModule],
   controllers: [WorkspaceController],
   providers: [WorkspaceService],
+  exports: [WorkspaceService],
 })
 export class WorkspacesModule {}

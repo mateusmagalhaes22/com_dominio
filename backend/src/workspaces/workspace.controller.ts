@@ -44,6 +44,21 @@ export class WorkspaceController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get(':id/condominiums/count')
+  findCondominiumsCount(@Param('id', ParseIntPipe) id: number) {
+    return this.workspaceService.findCondominiumsCount(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/maintenances/count')
+  findWorkspaceMaintenancesCount(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('Status') status?: string,
+  ) {
+    return this.workspaceService.findWorkspaceMaintenancesCount(id, status);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id/condominiums/:condominiumId')
   findCondominiumById(@Param('id', ParseIntPipe) workspaceId: number, @Param('condominiumId', ParseIntPipe) condominiumId: number) {
     return this.workspaceService.findCondominiumsByWorkspaceIdAndCondominiumId(workspaceId, condominiumId);
@@ -85,8 +100,18 @@ export class WorkspaceController {
   findMaintenances(
     @Param('workspaceId', ParseIntPipe) workspaceId: number,
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
+    @Headers('Status') status?: string,
   ) {
-    return this.workspaceService.findMaintenances(workspaceId, condominiumId);
+    return this.workspaceService.findMaintenances(workspaceId, condominiumId, status);
+  }
+
+  @Get(':workspaceId/condominiums/:condominiumId/maintenances/count')
+  findMaintenancesCount(
+    @Param('workspaceId', ParseIntPipe) workspaceId: number,
+    @Param('condominiumId', ParseIntPipe) condominiumId: number,
+    @Headers('Status') status?: string,
+  ) {
+    return this.workspaceService.findMaintenancesCount(workspaceId, condominiumId, status);
   }
 
   @UseGuards(JwtAuthGuard)

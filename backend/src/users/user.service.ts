@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, OnModuleInit } from '@nestjs/common';
 import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,7 +7,7 @@ import { loginConstants } from '../login/constants';
 import { Workspace } from 'src/workspaces/workspace.entity';
 
 @Injectable()
-export class UserService {
+export class UserService implements OnModuleInit {
   
   constructor(
     @InjectRepository(User)
@@ -47,7 +47,6 @@ export class UserService {
   }
 
   async create(user: User): Promise<User> {
-    // Verificar se já existe usuário com o mesmo email
     const existingUser = await this.userRepository.findOne({ 
       where: { email: user.email } 
     });

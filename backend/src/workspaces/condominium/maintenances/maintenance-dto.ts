@@ -1,4 +1,5 @@
-import { IsDate, IsString } from 'class-validator';
+import { IsDate, IsString, IsEnum, IsOptional } from 'class-validator';
+import { MaintenanceStatus } from './maintenance-status.enum';
 
 export class MaintenanceDto {
 
@@ -13,4 +14,8 @@ export class MaintenanceDto {
 
   @IsDate()
   endDate: Date;
+
+  @IsEnum(MaintenanceStatus)
+  @IsOptional()
+  status?: MaintenanceStatus;
 }

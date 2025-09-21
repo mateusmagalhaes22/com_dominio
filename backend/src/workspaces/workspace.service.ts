@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Condominium } from 'src/workspaces/condominium/condominium.entity';
 import { Maintenance } from './condominium/maintenances/maintenance.entity';
+import { MaintenanceStatus } from './condominium/maintenances/maintenance-status.enum';
 
 @Injectable()
 export class WorkspaceService {
@@ -90,6 +91,16 @@ export class WorkspaceService {
     await this.workspaceRepository.delete(id);
   }
 
+  async findByUserId(userId: number): Promise<Workspace | null> {
+    return this.workspaceRepository.findOne({
+      where: [
+        { adminUser: { id: userId } },
+        { users: { id: userId } }
+      ],
+      relations: ['adminUser', 'users']
+    });
+  }
+
   async findCondominiums(id: number): Promise<Condominium[]> {
     const workspace = await this.workspaceRepository.findOne({
       where: { id },
@@ -101,6 +112,14 @@ export class WorkspaceService {
     }
 
     return workspace.condominiums;
+  }
+
+  async findCondominiumsCount(id: number): Promise<number> {
+    const count = await this.condominiumRepository.count({
+      where: { workspace: { id } },
+    });
+
+    return count;
   }
 
   async findCondominiumsByWorkspaceIdAndCondominiumId(workspaceId: number, condominiumId: number): Promise<Condominium | null> {
@@ -149,17 +168,48 @@ export class WorkspaceService {
     return this.maintenanceRepository.save(maintenance);
   }
 
-  async findMaintenances(workspaceId: number, condominiumId: number): Promise<Maintenance[]> {
-    const condominium = await this.condominiumRepository.findOne({
+  async findMaintenances(workspaceId: number, condominiumId: number, status?: string): Promise<Maintenance[]> {
+    // Primeiro verificar se o condominium existe
+    const condominiumExists = await this.condominiumRepository.findOne({
       where: { id: condominiumId, workspace: { id: workspaceId } },
-      relations: ['maintenances'],
     });
 
-    if (!condominium) {
+    if (!condominiumExists) {
       throw new NotFoundException(`Condominium with ID ${condominiumId} not found`);
     }
 
-    return condominium.maintenances;
+    // Construir query com filtro por status se fornecido
+    const whereCondition: any = {
+      condominium: { id: condominiumId, workspace: { id: workspaceId } }
+    };
+
+    if (status && Object.values(MaintenanceStatus).includes(status as MaintenanceStatus)) {
+      whereCondition.status = status as MaintenanceStatus;
+    }
+
+    const maintenances = await this.maintenanceRepository.find({
+      where: whereCondition,
+      relations: ['condominium']
+    });
+
+    return maintenances;
+  }
+
+  async findMaintenancesCount(workspaceId: number, condominiumId: number, status?: string): Promise<number> {
+    // Construir query com filtro por status se fornecido
+    const whereCondition: any = {
+      condominium: { id: condominiumId, workspace: { id: workspaceId } }
+    };
+
+    if (status && Object.values(MaintenanceStatus).includes(status as MaintenanceStatus)) {
+      whereCondition.status = status as MaintenanceStatus;
+    }
+
+    const count = await this.maintenanceRepository.count({
+      where: whereCondition,
+    });
+
+    return count;
   }
 
   updateMaintenance(condominiumId: number, maintenanceId: number, data: Partial<Maintenance>) {
@@ -170,5 +220,22 @@ export class WorkspaceService {
 
   removeMaintenance(condominiumId: number, maintenanceId: number) {
     return this.maintenanceRepository.delete({ id: maintenanceId, condominium: { id: condominiumId } });
+  }
+
+  async findWorkspaceMaintenancesCount(workspaceId: number, status?: string): Promise<number> {
+    // Construir query com filtro por status se fornecido
+    const whereCondition: any = {
+      condominium: { workspace: { id: workspaceId } }
+    };
+
+    if (status && Object.values(MaintenanceStatus).includes(status as MaintenanceStatus)) {
+      whereCondition.status = status as MaintenanceStatus;
+    }
+
+    const count = await this.maintenanceRepository.count({
+      where: whereCondition,
+    });
+
+    return count;
   }
 }
