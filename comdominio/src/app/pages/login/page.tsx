@@ -28,13 +28,8 @@ export default function LoginPage() {
         password: formData.password
       };
 
-      // Fallback para quando a variável de ambiente não está configurada na Vercel
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/';
-      const apiUrl = `${baseUrl}login`;
-      
-      // Debug para verificar a URL (remover após configurar a variável na Vercel)
-      console.log('API URL:', apiUrl);
-      console.log('Base URL from env:', process.env.NEXT_PUBLIC_API_URL);
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const apiUrl = `${baseUrl}/login`;
 
       const res = await fetch(apiUrl, {
         method: "POST",
@@ -59,6 +54,17 @@ export default function LoginPage() {
       
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
+        
+        // Armazenar workspaceId se disponível
+        if (data.workspaceId) {
+          localStorage.setItem("workspaceId", data.workspaceId.toString());
+        }
+        
+        // Armazenar dados do usuário
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+        
         router.push('/pages/home');
       } else {
         throw new Error('Token não recebido');
@@ -80,7 +86,7 @@ export default function LoginPage() {
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sistema de Condomínio
+          ComDomínio
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Faça login para acessar o sistema
@@ -127,8 +133,8 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-
-            <div className="flex items-center justify-between">
+            {/* lembrar-me e esqueceu a senha desativados por enquanto */}
+            {/* <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -146,7 +152,7 @@ export default function LoginPage() {
                   Esqueceu a senha?
                 </a>
               </div>
-            </div>
+            </div>*/}
 
             <div>
               <button
@@ -157,26 +163,6 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Ou</span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <Link
-                href="/pages/home"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
-              >
-                <span>Continuar como convidado</span>
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
     </div>

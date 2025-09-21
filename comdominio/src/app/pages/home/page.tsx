@@ -1,22 +1,66 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import StatCard from '../../../components/StatCard';
 
 export default function HomePage() {
+
+  const [dashboardData, setDashboardData] = useState({
+    totalCondominios: 0,
+    manutencoesPendentes: 0
+  });
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        const workspaceId = localStorage.getItem('workspaceId');
+        const token = localStorage.getItem('token');
+        
+        if (!workspaceId || !token) {
+          console.error('WorkspaceId ou token não encontrados');
+          return;
+        }
+
+        const qtdCondominios = await fetch(`${baseUrl}/workspaces/${workspaceId}/condominiums/count`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+        });
+
+        const qtdManutencoesPendentes = await fetch(`${baseUrl}/workspaces/${workspaceId}/maintenances/count`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "Status": "pendente"
+          },
+        });
+
+        if (qtdCondominios.ok && qtdManutencoesPendentes.ok) {
+          const condominiosData = await qtdCondominios.json();
+          const manutencoesPendentesData = await qtdManutencoesPendentes.json();
+          
+          setDashboardData({
+            totalCondominios: condominiosData || 0,
+            manutencoesPendentes: manutencoesPendentesData || 0
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do dashboard:', error);
+      }
+    };
+
+    loadDashboardData();
+  }, [baseUrl]);
+
   const statsData = [
     {
-      title: 'Total de Moradores',
-      value: '1,234',
-      bgColor: 'bg-blue-100',
-      textColor: 'text-blue-600',
-      trend: { value: '+12%', isPositive: true },
-      icon: (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-    },
-    {
       title: 'Condomínios Ativos',
-      value: '42',
+      value: dashboardData.totalCondominios.toString(),
       bgColor: 'bg-green-100',
       textColor: 'text-green-600',
       trend: { value: '+3', isPositive: true },
@@ -28,25 +72,13 @@ export default function HomePage() {
     },
     {
       title: 'Manutenções Pendentes',
-      value: '8',
+      value: dashboardData.manutencoesPendentes.toString(),
       bgColor: 'bg-yellow-100',
       textColor: 'text-yellow-600',
       trend: { value: '-2', isPositive: true },
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Alertas Urgentes',
-      value: '3',
-      bgColor: 'bg-red-100',
-      textColor: 'text-red-600',
-      trend: { value: '+1', isPositive: false },
-      icon: (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
         </svg>
       ),
     },

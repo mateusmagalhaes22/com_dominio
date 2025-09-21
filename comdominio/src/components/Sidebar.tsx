@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const menuItems = [
   {
@@ -46,6 +46,20 @@ const menuItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [userName, setUserName] = useState('Usuário');
+
+  useEffect(() => {
+    // Buscar dados do usuário no localStorage
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setUserName(user.name || 'Usuário');
+      } catch (error) {
+        console.error('Erro ao obter dados do usuário:', error);
+      }
+    }
+  }, []);
 
   return (
     <div className={`bg-gray-900 text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} min-h-screen flex flex-col`}>
@@ -107,13 +121,18 @@ export default function Sidebar() {
           </div>
           {!collapsed && (
             <div className="ml-3">
-              <p className="text-sm font-medium">Usuário</p>
-              <Link 
-                href="/pages/login" 
-                className="text-xs text-gray-400 hover:text-white transition-colors"
+              <p className="text-sm font-medium">{userName}</p>
+              <button 
+                onClick={() => {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('workspaceId');
+                  localStorage.removeItem('user');
+                  window.location.href = '/pages/login';
+                }}
+                className="text-xs text-gray-400 hover:text-white transition-colors cursor-pointer"
               >
                 Sair
-              </Link>
+              </button>
             </div>
           )}
         </div>
