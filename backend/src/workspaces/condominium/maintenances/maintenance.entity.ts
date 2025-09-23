@@ -15,9 +15,6 @@ export class Maintenance {
   description: String;
 
   @Column({nullable: true})
-  startDate: Date;
-
-  @Column({nullable: true})
   endDate: Date;
 
   @Column({
@@ -34,10 +31,10 @@ export class Maintenance {
   @BeforeUpdate()
   calculateStatus() {
     const currentDate = new Date();
-    
+
     if (this.endDate && this.endDate < currentDate && this.status !== MaintenanceStatus.FEITO) {
       this.status = MaintenanceStatus.ATRASADO;
-    } else if (this.status === MaintenanceStatus.ATRASADO && this.endDate && this.endDate >= currentDate) {
+    } else if (this.endDate && this.endDate >= currentDate && this.status !== MaintenanceStatus.FEITO) {
       this.status = MaintenanceStatus.PENDENTE;
     }
   }

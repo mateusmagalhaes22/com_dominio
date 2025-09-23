@@ -119,9 +119,9 @@ export class WorkspaceController {
   @UseInterceptors(IdempotencyInterceptor)
   createMaintenance(
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
-    @Body() body: { description: string; date: Date; cost: number }
+    @Body() dto: MaintenanceDto
   ) {
-    return this.workspaceService.createMaintenance(condominiumId, body);
+    return this.workspaceService.createMaintenance(condominiumId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -141,5 +141,11 @@ export class WorkspaceController {
     @Param('maintenanceId', ParseIntPipe) maintenanceId: number,
   ) {
     return this.workspaceService.removeMaintenance(condominiumId, maintenanceId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('update-overdue-maintenances')
+  updateOverdueMaintenances() {
+    return this.workspaceService.updateOverdueMaintenances();
   }
 }

@@ -17,4 +17,12 @@ export class CondominiumDto {
   @IsNumber()
   @IsNotEmpty()
   workspaceId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  units: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  maintenanceAmount: number;
 }

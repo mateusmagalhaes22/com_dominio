@@ -9,11 +9,9 @@ export class MaintenanceDto {
   @IsString()
   description: String;
 
+  @IsOptional()
   @IsDate()
-  startDate: Date;
-
-  @IsDate()
-  endDate: Date;
+  endDate?: Date;
 
   @IsEnum(MaintenanceStatus)
   @IsOptional()

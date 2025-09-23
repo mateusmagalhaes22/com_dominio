@@ -4,10 +4,6 @@ interface StatCardProps {
   icon: React.ReactNode;
   bgColor?: string;
   textColor?: string;
-  trend?: {
-    value: string;
-    isPositive: boolean;
-  };
   className?: string;
 }
 
@@ -17,7 +13,6 @@ export default function StatCard({
   icon, 
   bgColor = 'bg-blue-100', 
   textColor = 'text-blue-600',
-  trend,
   className = ''
 }: StatCardProps) {
   return (
@@ -34,11 +29,6 @@ export default function StatCard({
             <p className="text-2xl font-semibold text-gray-900">{value}</p>
           </div>
         </div>
-        {trend && (
-          <div className={`text-sm font-medium ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            <span className={trend.isPositive ? '↗' : '↘'}>{trend.value}</span>
-          </div>
-        )}
       </div>
     </div>
   );

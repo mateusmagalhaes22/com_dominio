@@ -2,8 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Workspace } from './workspace.entity';
 import { User } from '../users/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { Condominium } from 'src/workspaces/condominium/condominium.entity';
+import { CondominiumDto } from 'src/workspaces/condominium/condominium-dto';
 import { Maintenance } from './condominium/maintenances/maintenance.entity';
 import { MaintenanceStatus } from './condominium/maintenances/maintenance-status.enum';
 
@@ -101,17 +102,17 @@ export class WorkspaceService {
     });
   }
 
-  async findCondominiums(id: number): Promise<Condominium[]> {
+  async findCondominiums(id: number): Promise<CondominiumDto[]> {
     const workspace = await this.workspaceRepository.findOne({
       where: { id },
-      relations: ['condominiums'],
+      relations: ['condominiums', 'condominiums.maintenances'],
     });
 
     if (!workspace) {
       throw new NotFoundException(`Workspace with ID ${id} not found`);
     }
 
-    return workspace.condominiums;
+    return workspace.condominiums.map(condominium => condominium.toDto());
   }
 
   async findCondominiumsCount(id: number): Promise<number> {
@@ -122,10 +123,17 @@ export class WorkspaceService {
     return count;
   }
 
-  async findCondominiumsByWorkspaceIdAndCondominiumId(workspaceId: number, condominiumId: number): Promise<Condominium | null> {
-    return this.condominiumRepository.findOne({
+  async findCondominiumsByWorkspaceIdAndCondominiumId(workspaceId: number, condominiumId: number): Promise<CondominiumDto | null> {
+    const condominium = await this.condominiumRepository.findOne({
       where: { id: condominiumId, workspace: { id: workspaceId } },
+      relations: ['maintenances', 'workspace'],
     });
+
+    if (!condominium) {
+      return null;
+    }
+
+    return condominium.toDto();
   }
   
   async createCondominium(workspaceId: number, data: Partial<Condominium>): Promise<Condominium> {
@@ -157,11 +165,17 @@ export class WorkspaceService {
     const condominium = await this.condominiumRepository.findOne({ where: { id: condominiumId } });
 
     if (!condominium) {
-      throw new NotFoundException(`Workspace with ID ${condominiumId} not found`);
+      throw new NotFoundException(`Condominium with ID ${condominiumId} not found`);
+    }
+
+    // Handle endDate properly - if it's undefined, null, or invalid, set it to undefined
+    const processedData = { ...data };
+    if (processedData.endDate && (isNaN(processedData.endDate.getTime()) || processedData.endDate.toString() === 'Invalid Date')) {
+      processedData.endDate = undefined;
     }
 
     const maintenance = this.maintenanceRepository.create({
-      ...data,
+      ...processedData,
       condominium,
     });
 
@@ -169,7 +183,9 @@ export class WorkspaceService {
   }
 
   async findMaintenances(workspaceId: number, condominiumId: number, status?: string): Promise<Maintenance[]> {
-    // Primeiro verificar se o condominium existe
+
+    await this.updateOverdueMaintenances();
+    
     const condominiumExists = await this.condominiumRepository.findOne({
       where: { id: condominiumId, workspace: { id: workspaceId } },
     });
@@ -178,7 +194,6 @@ export class WorkspaceService {
       throw new NotFoundException(`Condominium with ID ${condominiumId} not found`);
     }
 
-    // Construir query com filtro por status se fornecido
     const whereCondition: any = {
       condominium: { id: condominiumId, workspace: { id: workspaceId } }
     };
@@ -196,7 +211,9 @@ export class WorkspaceService {
   }
 
   async findMaintenancesCount(workspaceId: number, condominiumId: number, status?: string): Promise<number> {
-    // Construir query com filtro por status se fornecido
+  
+    await this.updateOverdueMaintenances();
+
     const whereCondition: any = {
       condominium: { id: condominiumId, workspace: { id: workspaceId } }
     };
@@ -223,7 +240,9 @@ export class WorkspaceService {
   }
 
   async findWorkspaceMaintenancesCount(workspaceId: number, status?: string): Promise<number> {
-    // Construir query com filtro por status se fornecido
+
+    await this.updateOverdueMaintenances();
+    
     const whereCondition: any = {
       condominium: { workspace: { id: workspaceId } }
     };
@@ -237,5 +256,21 @@ export class WorkspaceService {
     });
 
     return count;
+  }
+
+  async updateOverdueMaintenances(): Promise<void> {
+    const currentDate = new Date();
+    
+    const overdueMaintances = await this.maintenanceRepository.find({
+      where: {
+        status: MaintenanceStatus.PENDENTE,
+        endDate: LessThan(currentDate)
+      }
+    });
+
+    for (const maintenance of overdueMaintances) {
+      maintenance.status = MaintenanceStatus.ATRASADO;
+      await this.maintenanceRepository.save(maintenance);
+    }
   }
 }
