@@ -26,15 +26,15 @@ export class Condominium {
   @ManyToOne(() => Workspace, (workspace) => workspace.condominiums, { onDelete: 'CASCADE' })
   workspace: Workspace;
 
-  toDto(): CondominiumDto {
-    const dto = new CondominiumDto();
-    dto.name = this.name as string;
-    dto.cnpj = this.cnpj as string;
-    dto.address = this.address as string;
-    dto.workspaceId = this.workspace?.id || 0;
-    dto.units = this.units;
-    dto.maintenanceAmount = this.maintenances ? this.maintenances.length : 0;
-    
-    return dto;
+  toDto(): any {
+    return {
+      id: this.id,
+      name: this.name as string,
+      cnpj: this.cnpj as string,
+      address: this.address as string,
+      workspaceId: this.workspace?.id || 0,
+      units: this.units || 0,
+      maintenanceAmount: this.maintenances ? this.maintenances.length : 0
+    };
   }
 }

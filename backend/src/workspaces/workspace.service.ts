@@ -168,10 +168,18 @@ export class WorkspaceService {
       throw new NotFoundException(`Condominium with ID ${condominiumId} not found`);
     }
 
-    // Handle endDate properly - if it's undefined, null, or invalid, set it to undefined
+    // Handle endDate properly - convert string to Date if needed
     const processedData = { ...data };
-    if (processedData.endDate && (isNaN(processedData.endDate.getTime()) || processedData.endDate.toString() === 'Invalid Date')) {
-      processedData.endDate = undefined;
+    if (processedData.endDate) {
+      // Convert string to Date if it's a string
+      if (typeof processedData.endDate === 'string') {
+        processedData.endDate = new Date(processedData.endDate);
+      }
+      
+      // Check if the resulting Date is valid
+      if (isNaN(processedData.endDate.getTime()) || processedData.endDate.toString() === 'Invalid Date') {
+        processedData.endDate = undefined;
+      }
     }
 
     const maintenance = this.maintenanceRepository.create({

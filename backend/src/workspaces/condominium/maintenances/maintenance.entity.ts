@@ -14,6 +14,12 @@ export class Maintenance {
   @Column()
   description: String;
 
+  @Column()
+  createdAt: Date;
+
+  @Column()
+  updatedAt: Date;
+
   @Column({nullable: true})
   endDate: Date;
 
@@ -37,5 +43,16 @@ export class Maintenance {
     } else if (this.endDate && this.endDate >= currentDate && this.status !== MaintenanceStatus.FEITO) {
       this.status = MaintenanceStatus.PENDENTE;
     }
+  }
+
+  @BeforeInsert()
+  setCreationDate() {
+    this.createdAt = new Date();
+    this.updatedAt = new Date();
+  }
+
+  @BeforeUpdate()
+  setUpdateDate() {
+    this.updatedAt = new Date();
   }
 }

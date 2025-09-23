@@ -1,6 +1,7 @@
 'use client';
 
 import React from "react";
+import { useRouter } from 'next/navigation';
 
 interface Condominium {
     id: number;
@@ -12,10 +13,20 @@ interface Condominium {
 }
 
 export default function ComdominiumsPage() {
-
+    const router = useRouter();
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
     const [condominiums, setCondominiums] = React.useState<Condominium[]>([]);
+
+    const handleCondominiumClick = (condominiumId: number) => {
+        console.log('Condominium ID clicked:', condominiumId);
+        if (condominiumId && condominiumId !== undefined) {
+            router.push(`/pages/condominios/${condominiumId}/manutencoes`);
+        } else {
+            console.error('Invalid condominium ID:', condominiumId);
+            alert('Erro: ID do condomínio não encontrado');
+        }
+    };
 
     React.useEffect(() => {
         const fetchData = async () => {
@@ -43,6 +54,7 @@ export default function ComdominiumsPage() {
                 {condominiums.map((condo, index) => (
                     <div
                         key={condo.id || `condo-${index}`}
+                        onClick={() => handleCondominiumClick(condo.id)}
                         style={{
                         border: "1px solid #e0e0e0",
                         borderRadius: 8,
@@ -52,6 +64,16 @@ export default function ComdominiumsPage() {
                         overflow: "hidden",
                         display: "flex",
                         flexDirection: "column",
+                        cursor: "pointer",
+                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
                     }}
                 >
                     <div style={{ padding: 16 }}>
