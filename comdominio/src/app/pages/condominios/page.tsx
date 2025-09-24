@@ -22,6 +22,7 @@ export default function ComdominiumsPage() {
     const [condominiums, setCondominiums] = React.useState<Condominium[]>([]);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
+    const [deletingCondominiumId, setDeletingCondominiumId] = React.useState<number | null>(null);
 
     const handleCondominiumClick = (condominiumId: number) => {
         if (condominiumId && condominiumId !== undefined) {
@@ -77,6 +78,48 @@ export default function ComdominiumsPage() {
             alert('Erro ao adicionar condomínio. Tente novamente.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteCondominium = async (condominiumId: number, event: React.MouseEvent) => {
+        // Prevent navigation when clicking delete button
+        event.stopPropagation();
+        
+        if (!confirm('Tem certeza que deseja deletar este condomínio? Esta ação não pode ser desfeita.')) {
+            return;
+        }
+
+        setDeletingCondominiumId(condominiumId);
+        
+        const workspaceId = localStorage.getItem('workspaceId');
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch(
+                `${baseUrl}/workspaces/${workspaceId}/condominiums/${condominiumId}`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (response.ok) {
+                // Remove from local state
+                setCondominiums(prevCondominiums => 
+                    prevCondominiums.filter(c => c.id !== condominiumId)
+                );
+                alert('Condomínio removido com sucesso!');
+            } else {
+                const errorData = await response.json();
+                alert(`Erro ao remover condomínio: ${errorData.message || 'Erro desconhecido'}`);
+            }
+        } catch (error) {
+            console.error('Erro ao remover condomínio:', error);
+            alert('Erro ao remover condomínio. Tente novamente.');
+        } finally {
+            setDeletingCondominiumId(null);
         }
     };
 
@@ -146,7 +189,49 @@ export default function ComdominiumsPage() {
                         e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
                     }}
                 >
-                    <div style={{ padding: 16 }}>
+                    <div style={{ position: "relative", padding: 16 }}>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteCondominium(condo.id, e);
+                            }}
+                            disabled={deletingCondominiumId === condo.id}
+                            style={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                backgroundColor: "#ff4444",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "50%",
+                                width: 28,
+                                height: 28,
+                                cursor: deletingCondominiumId === condo.id ? "not-allowed" : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                                opacity: deletingCondominiumId === condo.id ? 0.5 : 1,
+                                transition: "all 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                                if (deletingCondominiumId !== condo.id) {
+                                    e.currentTarget.style.backgroundColor = "#dd3333";
+                                    e.currentTarget.style.transform = "scale(1.1)";
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (deletingCondominiumId !== condo.id) {
+                                    e.currentTarget.style.backgroundColor = "#ff4444";
+                                    e.currentTarget.style.transform = "scale(1)";
+                                }
+                            }}
+                            title={deletingCondominiumId === condo.id ? "Removendo..." : "Remover condomínio"}
+                        >
+                            {deletingCondominiumId === condo.id ? "..." : "×"}
+                        </button>
                         <h2 style={{ margin: "0 0 12px 0", fontSize: 20, fontWeight: "bold", color: "#000" }}>
                             {condo.name}
                         </h2>
