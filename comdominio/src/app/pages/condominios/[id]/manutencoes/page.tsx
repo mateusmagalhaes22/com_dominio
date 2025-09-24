@@ -2,6 +2,8 @@
 
 import React from "react";
 import { useRouter, useParams } from 'next/navigation';
+import AddMaintenanceModal from '../../../../../components/AddMaintenanceModal';
+import { generateIdempotencyKeySync } from '../../../../../utils/idempotency';
 
 interface Maintenance {
     name: string;
@@ -29,6 +31,8 @@ export default function MaintenancesPage() {
     const [maintenances, setMaintenances] = React.useState<Maintenance[]>([]);
     const [condominium, setCondominium] = React.useState<Condominium | null>(null);
     const [loading, setLoading] = React.useState(true);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [isAddingMaintenance, setIsAddingMaintenance] = React.useState(false);
 
     React.useEffect(() => {
         const fetchData = async () => {
@@ -75,6 +79,53 @@ export default function MaintenancesPage() {
         }
     }, [condominiumId, baseUrl]);
 
+    const handleAddMaintenance = async (formData: {
+        name: string;
+        description: string;
+        status: string;
+        endDate: string;
+    }) => {
+        setIsAddingMaintenance(true);
+        
+        const workspaceId = localStorage.getItem('workspaceId');
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch(`${baseUrl}/workspaces/${workspaceId}/condominiums/${condominiumId}/maintenances`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': generateIdempotencyKeySync(formData.name, formData.endDate)
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                // Refresh maintenances list
+                const maintenanceResponse = await fetch(
+                    `${baseUrl}/workspaces/${workspaceId}/condominiums/${condominiumId}/maintenances`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+                
+                if (maintenanceResponse.ok) {
+                    const maintenanceData = await maintenanceResponse.json();
+                    setMaintenances(maintenanceData);
+                }
+            } else {
+                console.error('Erro ao criar manutenção:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro ao criar manutenção:', error);
+        } finally {
+            setIsAddingMaintenance(false);
+        }
+    };
+
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
             case 'pendente':
@@ -109,31 +160,49 @@ export default function MaintenancesPage() {
 
     return (
         <div style={{ padding: 24, background: "#f9f9f9", minHeight: "100vh" }}>
-            <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <button
+                        onClick={() => router.back()}
+                        style={{
+                            padding: "8px 16px",
+                            background: "#2196f3",
+                            color: "white",
+                            border: "none",
+                            borderRadius: 4,
+                            cursor: "pointer",
+                            fontSize: 14
+                        }}
+                    >
+                        ← Voltar
+                    </button>
+                    <div>
+                        <h1 style={{ fontSize: 24, fontWeight: "bold", color: "#333", margin: 0 }}>
+                            Manutenções
+                        </h1>
+                        {condominium && (
+                            <p style={{ fontSize: 16, color: "#666", margin: "4px 0 0 0" }}>
+                                {condominium.name}
+                            </p>
+                        )}
+                    </div>
+                </div>
+                
                 <button
-                    onClick={() => router.back()}
+                    onClick={() => setIsModalOpen(true)}
                     style={{
-                        padding: "8px 16px",
+                        padding: "10px 20px",
                         background: "#2196f3",
                         color: "white",
                         border: "none",
                         borderRadius: 4,
                         cursor: "pointer",
-                        fontSize: 14
+                        fontSize: 14,
+                        fontWeight: "bold"
                     }}
                 >
-                    ← Voltar
+                    + Adicionar Manutenção
                 </button>
-                <div>
-                    <h1 style={{ fontSize: 24, fontWeight: "bold", color: "#333", margin: 0 }}>
-                        Manutenções
-                    </h1>
-                    {condominium && (
-                        <p style={{ fontSize: 16, color: "#666", margin: "4px 0 0 0" }}>
-                            {condominium.name}
-                        </p>
-                    )}
-                </div>
             </div>
 
             {/* Lista de manutenções */}
@@ -196,6 +265,14 @@ export default function MaintenancesPage() {
                     ))}
                 </div>
             )}
+            
+            {/* Modal para adicionar manutenção */}
+            <AddMaintenanceModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleAddMaintenance}
+                isLoading={isAddingMaintenance}
+            />
         </div>
     );
 }

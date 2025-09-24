@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter } from 'next/navigation';
 import AddCondominiumModal from '../../../components/AddCondominiumModal';
+import { generateIdempotencyKeySync } from '../../../utils/idempotency';
 
 interface Condominium {
     id: number;
@@ -22,32 +23,12 @@ export default function ComdominiumsPage() {
     const [loading, setLoading] = React.useState(false);
 
     const handleCondominiumClick = (condominiumId: number) => {
-        console.log('Condominium ID clicked:', condominiumId);
         if (condominiumId && condominiumId !== undefined) {
             router.push(`/pages/condominios/${condominiumId}/manutencoes`);
         } else {
             console.error('Invalid condominium ID:', condominiumId);
             alert('Erro: ID do condomínio não encontrado');
         }
-    };
-
-    const simpleHash = (str: string): string => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return Math.abs(hash).toString(36);
-    };
-
-    const generateIdempotencyKey = (name: string, cnpj: string) => {
-
-        const concatenated = `${name}${cnpj}`;
-        
-        const key = simpleHash(concatenated);
-        
-        return key;
     };
 
     const handleAddCondominium = async (formData: {name: string, cnpj: string, address: string, units: number}) => {
@@ -70,7 +51,7 @@ export default function ComdominiumsPage() {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                    'Idempotency-Key': generateIdempotencyKey(formData.name, formData.cnpj)
+                    'Idempotency-Key': generateIdempotencyKeySync(formData.name, formData.cnpj)
                 },
                 body: JSON.stringify(requestBody)
             });
