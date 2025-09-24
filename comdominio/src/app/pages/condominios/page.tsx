@@ -11,7 +11,8 @@ interface Condominium {
     address: string;
     cnpj: string;
     units: number;
-    maintenanceAmount: number;
+    pendingMaintenanceAmount: number;
+    overdueMaintenanceAmount: number;
 }
 
 export default function ComdominiumsPage() {
@@ -42,7 +43,7 @@ export default function ComdominiumsPage() {
             cnpj: formData.cnpj,
             address: formData.address,
             units: formData.units,
-            maintenanceAmount: 0
+            workspaceId: parseInt(workspaceId || '0')
         };
 
         try {
@@ -160,12 +161,16 @@ export default function ComdominiumsPage() {
                                 <strong>Unidades:</strong> {condo.units}
                             </p>
                             <p style={{ 
-                                margin: 0, 
-                                fontSize: 14, 
-                                color: condo.maintenanceAmount > 0 ? "#ffd900ff" : "#1a9641",
+                                margin: 0,
+                                padding: "4px 8px", 
+                                fontSize: 14,
+                                color: "#fff",
+                                borderRadius: 8,
+                                backgroundColor: condo.overdueMaintenanceAmount > 0 ? "#f32121ff" : (condo.pendingMaintenanceAmount > 0 ? "#ffd900ff" : "#1a9641"),
                                 fontWeight: "bold"
                             }}>
-                                <strong>Manutenções pendentes:</strong> {condo.maintenanceAmount}
+                                <strong>Manutenções pendentes:</strong> {condo.pendingMaintenanceAmount}<br/>
+                                <strong>Manutenções atrasadas:</strong> {condo.overdueMaintenanceAmount}
                             </p>
                         </div>
                     </div>

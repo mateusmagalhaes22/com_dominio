@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Workspace } from 'src/workspaces/workspace.entity';
 import { Maintenance } from './maintenances/maintenance.entity';
+import { MaintenanceStatus } from './maintenances/maintenance-status.enum';
 import { CondominiumDto } from './condominium-dto';
 
 @Entity()
@@ -27,6 +28,12 @@ export class Condominium {
   workspace: Workspace;
 
   toDto(): any {
+    const pendingMaintenances = this.maintenances ? 
+      this.maintenances.filter(m => m.status === MaintenanceStatus.PENDENTE) : [];
+    
+    const overdueMaintenances = this.maintenances ? 
+      this.maintenances.filter(m => m.status === MaintenanceStatus.ATRASADO) : [];
+
     return {
       id: this.id,
       name: this.name as string,
@@ -34,7 +41,8 @@ export class Condominium {
       address: this.address as string,
       workspaceId: this.workspace?.id || 0,
       units: this.units || 0,
-      maintenanceAmount: this.maintenances ? this.maintenances.length : 0
+      pendingMaintenanceAmount: pendingMaintenances.length,
+      overdueMaintenanceAmount: overdueMaintenances.length
     };
   }
 }

@@ -21,8 +21,4 @@ export class CondominiumDto {
   @IsNumber()
   @IsNotEmpty()
   units: number;
-
-  @IsNumber()
-  @IsNotEmpty()
-  maintenanceAmount: number;
 }

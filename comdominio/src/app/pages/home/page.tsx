@@ -7,7 +7,8 @@ export default function HomePage() {
 
   const [dashboardData, setDashboardData] = useState({
     totalCondominios: 0,
-    manutencoesPendentes: 0
+    manutencoesPendentes: 0,
+    manutencoesAtrasadas: 0
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -40,13 +41,24 @@ export default function HomePage() {
           },
         });
 
-        if (qtdCondominios.ok && qtdManutencoesPendentes.ok) {
+        const qtdManutencoesAtrasadas = await fetch(`${baseUrl}/workspaces/${workspaceId}/maintenances/count`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "Status": "atrasado"
+          },
+        });
+
+        if (qtdCondominios.ok && qtdManutencoesPendentes.ok && qtdManutencoesAtrasadas.ok) {
           const condominiosData = await qtdCondominios.json();
           const manutencoesPendentesData = await qtdManutencoesPendentes.json();
-          
+          const manutencoesAtrasadasData = await qtdManutencoesAtrasadas.json();
+
           setDashboardData({
             totalCondominios: condominiosData || 0,
-            manutencoesPendentes: manutencoesPendentesData || 0
+            manutencoesPendentes: manutencoesPendentesData || 0,
+            manutencoesAtrasadas: manutencoesAtrasadasData || 0
           });
         }
       } catch (error) {
@@ -74,6 +86,16 @@ export default function HomePage() {
       value: dashboardData.manutencoesPendentes.toString(),
       bgColor: 'bg-yellow-100',
       textColor: 'text-yellow-600',
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },{
+      title: 'Manutenções atrasadas',
+      value: dashboardData.manutencoesAtrasadas.toString(),
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-600',
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

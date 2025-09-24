@@ -67,13 +67,15 @@ export class WorkspaceController {
   @UseGuards(JwtAuthGuard)
   @Post(':id/condominiums')
   @UseInterceptors(IdempotencyInterceptor)
-  createCondominium(@Param('id') id: number, @Body() body: CondominiumDto) {
+  createCondominium(@Param('id') id: number, @Body() body: any) {
+    // Extract data from the correct structure
+    const formData = body.formData || body;
     const condominiumData = {
-      name: body.name,
-      cnpj: body.cnpj,
-      address: body.address,
-      units: body.units,
-      maintenanceAmount: body.maintenanceAmount
+      name: formData.name,
+      cnpj: formData.cnpj,
+      address: formData.address,
+      units: formData.units
+      // pendingMaintenanceAmount and overdueMaintenanceAmount are calculated automatically
     };
     
     return this.workspaceService.createCondominium(id, condominiumData);

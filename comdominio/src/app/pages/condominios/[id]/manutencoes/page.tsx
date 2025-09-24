@@ -33,6 +33,8 @@ export default function MaintenancesPage() {
     const [loading, setLoading] = React.useState(true);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [isAddingMaintenance, setIsAddingMaintenance] = React.useState(false);
+    const [deletingMaintenanceId, setDeletingMaintenanceId] = React.useState<number | null>(null);
+    const [completingMaintenanceId, setCompletingMaintenanceId] = React.useState<number | null>(null);
 
     React.useEffect(() => {
         const fetchData = async () => {
@@ -123,6 +125,84 @@ export default function MaintenancesPage() {
             console.error('Erro ao criar manutenção:', error);
         } finally {
             setIsAddingMaintenance(false);
+        }
+    };
+
+    const handleDeleteMaintenance = async (maintenanceId: number) => {
+        if (!confirm('Tem certeza que deseja deletar esta manutenção?')) {
+            return;
+        }
+
+        setDeletingMaintenanceId(maintenanceId);
+        
+        const workspaceId = localStorage.getItem('workspaceId');
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch(
+                `${baseUrl}/workspaces/${workspaceId}/condominiums/${condominiumId}/maintenances/${maintenanceId}`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (response.ok) {
+                // Remove from local state
+                setMaintenances(prevMaintenances => 
+                    prevMaintenances.filter(m => m.id !== maintenanceId)
+                );
+            } else {
+                console.error('Erro ao deletar manutenção:', response.statusText);
+                alert('Erro ao deletar manutenção');
+            }
+        } catch (error) {
+            console.error('Erro ao deletar manutenção:', error);
+            alert('Erro ao deletar manutenção');
+        } finally {
+            setDeletingMaintenanceId(null);
+        }
+    };
+
+    const handleCompleteMaintenance = async (maintenanceId: number) => {
+        setCompletingMaintenanceId(maintenanceId);
+        
+        const workspaceId = localStorage.getItem('workspaceId');
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch(
+                `${baseUrl}/workspaces/${workspaceId}/condominiums/${condominiumId}/maintenances/${maintenanceId}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'feito' })
+                }
+            );
+
+            if (response.ok) {
+                // Update local state
+                setMaintenances(prevMaintenances => 
+                    prevMaintenances.map(m => 
+                        m.id === maintenanceId 
+                            ? { ...m, status: 'feito' }
+                            : m
+                    )
+                );
+            } else {
+                console.error('Erro ao concluir manutenção:', response.statusText);
+                alert('Erro ao concluir manutenção');
+            }
+        } catch (error) {
+            console.error('Erro ao concluir manutenção:', error);
+            alert('Erro ao concluir manutenção');
+        } finally {
+            setCompletingMaintenanceId(null);
         }
     };
 
@@ -244,18 +324,65 @@ export default function MaintenancesPage() {
                                 <p style={{ margin: 0, color: "#666", fontSize: 14 }}>
                                     <strong>Ultima atualização:</strong> {maintenance.updatedAt? formatDate(maintenance.updatedAt) : 'Não definido'}
                                 </p>
-                                <span
-                                    style={{
-                                        padding: "4px 12px",
-                                        borderRadius: 20,
-                                        fontSize: 12,
-                                        fontWeight: "bold",
-                                        color: "white",
-                                        background: getStatusColor(maintenance.status)
-                                    }}
-                                >
-                                    {maintenance.status}
-                                </span>
+                                
+                                <div style={{ 
+                                    display: "flex", 
+                                    alignItems: "center", 
+                                    justifyContent: "space-between",
+                                    marginTop: 8
+                                }}>
+                                    
+                                    <div style={{ display: "flex", gap: 8, marginRight: 16}}>
+                                        {maintenance.status !== 'feito' && (
+                                            <button
+                                                onClick={() => handleCompleteMaintenance(maintenance.id)}
+                                                disabled={completingMaintenanceId === maintenance.id}
+                                                style={{
+                                                    padding: "6px 12px",
+                                                    background: completingMaintenanceId === maintenance.id ? "#ccc" : "#4caf50",
+                                                    color: "white",
+                                                    border: "none",
+                                                    borderRadius: 4,
+                                                    cursor: completingMaintenanceId === maintenance.id ? "not-allowed" : "pointer",
+                                                    fontSize: 12,
+                                                    fontWeight: "bold"
+                                                }}
+                                            >
+                                                {completingMaintenanceId === maintenance.id ? "Concluindo..." : "✓ Concluir"}
+                                            </button>
+                                        )}
+
+                                        <button
+                                            onClick={() => handleDeleteMaintenance(maintenance.id)}
+                                            disabled={deletingMaintenanceId === maintenance.id}
+                                            style={{
+                                                padding: "6px 12px",
+                                                background: deletingMaintenanceId === maintenance.id ? "#ccc" : "#f44336",
+                                                color: "white",
+                                                border: "none",
+                                                borderRadius: 4,
+                                                cursor: deletingMaintenanceId === maintenance.id ? "not-allowed" : "pointer",
+                                                fontSize: 12,
+                                                fontWeight: "bold"
+                                            }}
+                                        >
+                                            {deletingMaintenanceId === maintenance.id ? "Deletando..." : "🗑️ Deletar"}
+                                        </button>
+                                    </div>
+                                    
+                                    <span
+                                        style={{
+                                            padding: "4px 12px",
+                                            borderRadius: 20,
+                                            fontSize: 12,
+                                            fontWeight: "bold",
+                                            color: "white",
+                                            background: getStatusColor(maintenance.status)
+                                        }}
+                                    >
+                                        {maintenance.status}
+                                    </span>
+                                </div>
                             </div>
                             
                             <p style={{ margin: "0 0 12px 0", color: "#666", lineHeight: 1.5 }}>
@@ -266,7 +393,6 @@ export default function MaintenancesPage() {
                 </div>
             )}
             
-            {/* Modal para adicionar manutenção */}
             <AddMaintenanceModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
