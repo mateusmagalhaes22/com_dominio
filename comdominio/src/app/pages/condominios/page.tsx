@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useRouter } from 'next/navigation';
+import AddCondominiumModal from '../../../components/AddCondominiumModal';
 
 interface Condominium {
     id: number;
@@ -17,6 +18,8 @@ export default function ComdominiumsPage() {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
     const [condominiums, setCondominiums] = React.useState<Condominium[]>([]);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
 
     const handleCondominiumClick = (condominiumId: number) => {
         console.log('Condominium ID clicked:', condominiumId);
@@ -25,6 +28,73 @@ export default function ComdominiumsPage() {
         } else {
             console.error('Invalid condominium ID:', condominiumId);
             alert('Erro: ID do condomínio não encontrado');
+        }
+    };
+
+    const simpleHash = (str: string): string => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash).toString(36);
+    };
+
+    const generateIdempotencyKey = (name: string, cnpj: string) => {
+
+        const concatenated = `${name}${cnpj}`;
+        
+        const key = simpleHash(concatenated);
+        
+        return key;
+    };
+
+    const handleAddCondominium = async (formData: {name: string, cnpj: string, address: string, units: number}) => {
+        setLoading(true);
+        
+        const workspaceId = localStorage.getItem('workspaceId');
+        const token = localStorage.getItem('token');
+
+        const requestBody = {
+            name: formData.name,
+            cnpj: formData.cnpj,
+            address: formData.address,
+            units: formData.units,
+            maintenanceAmount: 0
+        };
+
+        try {
+            const response = await fetch(`${baseUrl}/workspaces/${workspaceId}/condominiums`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': generateIdempotencyKey(formData.name, formData.cnpj)
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (response.ok) {
+                const updatedResponse = await fetch(`${baseUrl}/workspaces/${workspaceId}/condominiums`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const updatedData = await updatedResponse.json();
+                setCondominiums(updatedData);
+                
+                setIsModalOpen(false);
+                alert('Condomínio adicionado com sucesso!');
+            } else {
+                const errorData = await response.json();
+                alert(`Erro ao adicionar condomínio: ${errorData.message || 'Erro desconhecido'}`);
+            }
+        } catch (error) {
+            console.error('Erro ao adicionar condomínio:', error);
+            alert('Erro ao adicionar condomínio. Tente novamente.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -47,9 +117,27 @@ export default function ComdominiumsPage() {
 
     return (
         <div style={{ padding: 24, background: "#f9f9f9", minHeight: "100vh" }}>
-            <h1 style={{ fontSize: 24, fontWeight: "bold", color: "#333", marginBottom: 16 }}>
-                Condomínios
-            </h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h1 style={{ fontSize: 24, fontWeight: "bold", color: "#333", marginBottom: 16 }}>
+                    Condomínios
+                </h1>
+                <button 
+                    onClick={() => setIsModalOpen(true)}
+                    style={{
+                        padding: "12px 24px",
+                        background: "#2196f3",
+                        color: "white",
+                        border: "none",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        boxShadow: "0 2px 4px rgba(33, 150, 243, 0.3)",
+                    }}
+                >
+                    + Adicionar Condomínio
+                </button>
+            </div>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "space-around" }}>
                 {condominiums.map((condo, index) => (
                     <div
@@ -103,6 +191,13 @@ export default function ComdominiumsPage() {
                 </div>
             ))}
             </div>
+
+            <AddCondominiumModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleAddCondominium}
+                loading={loading}
+            />
         </div>
     );
 }
