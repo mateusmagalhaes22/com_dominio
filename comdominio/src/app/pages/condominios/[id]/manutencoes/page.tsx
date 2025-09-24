@@ -7,8 +7,8 @@ import { generateIdempotencyKeySync } from '../../../../../utils/idempotency';
 
 interface Maintenance {
     name: string;
-    createdAt: any;
-    updatedAt: any;
+    createdAt: string;
+    updatedAt: string;
     id: number;
     description: string;
     status: string;

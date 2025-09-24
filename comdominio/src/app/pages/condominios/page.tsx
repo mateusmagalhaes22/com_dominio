@@ -95,7 +95,7 @@ export default function ComdominiumsPage() {
             setCondominiums(data);
         };
         fetchData();
-    }, []);
+    }, [baseUrl]);
 
     return (
         <div style={{ padding: 24, background: "#f9f9f9", minHeight: "100vh" }}>
