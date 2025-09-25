@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, ManyToMany, JoinTable, OneToMany, OneToOne, JoinColumn } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Condominium } from 'src/workspaces/condominium/condominium.entity';
 
@@ -7,13 +7,14 @@ export class Workspace {
   @PrimaryGeneratedColumn()
   id?: number;
 
-  @ManyToOne(() => User)
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn()
   adminUser: User;
 
   @ManyToMany(() => User)
   @JoinTable()
   users: User[];
 
-  @OneToMany(() => Condominium, (condominium) => condominium.workspace)
+  @OneToMany(() => Condominium, (condominium) => condominium.workspace, { onDelete: 'CASCADE' })
   condominiums: Condominium[];
 }

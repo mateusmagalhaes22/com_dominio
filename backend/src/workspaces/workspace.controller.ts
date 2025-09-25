@@ -2,6 +2,9 @@ import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseIntPip
 import { WorkspaceService } from './workspace.service';
 import { WorkspaceDto } from './workspace.dto';
 import { JwtAuthGuard } from 'src/login/jwt-auth.guard';
+import { WorkspaceAccessGuard } from 'src/login/workspace-access.guard';
+import { WorkspaceIdAccessGuard } from 'src/login/workspace-id-access.guard';
+import { CurrentUser, type AuthUser } from 'src/login/current-user.decorator';
 import { CondominiumDto } from 'src/workspaces/condominium/condominium-dto';
 import { MaintenanceDto } from './condominium/maintenances/maintenance-dto';
 import { IdempotencyInterceptor } from 'src/idempotency/idempotency.interceptor';
@@ -10,46 +13,57 @@ import { IdempotencyInterceptor } from 'src/idempotency/idempotency.interceptor'
 export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
 
-  @UseGuards(JwtAuthGuard)
+
   @Get()
-  async findAll(): Promise<WorkspaceDto[]> {
+  async findAll(@Headers('admin-key') adminKey: string, @CurrentUser() user: AuthUser): Promise<WorkspaceDto[]> {
+    const validAdminKey = process.env.ADMIN_KEY;
+    
+    if (!adminKey || adminKey !== validAdminKey) {
+      throw new BadRequestException('Invalid admin key for workspace access');
+    }
+
     const workspaces = await this.workspaceService.findAll();
-    return workspaces.map(w => new WorkspaceDto(w));
+    return workspaces.map(workspace => new WorkspaceDto(workspace));
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<WorkspaceDto | null> {
+  async findOne(@Headers('admin-key') adminKey: string, @Param('id') id: string): Promise<WorkspaceDto | null> {
+    const validAdminKey = process.env.ADMIN_KEY;
+    
+    if (!adminKey || adminKey !== validAdminKey) {
+      throw new BadRequestException('Invalid admin key for workspace access');
+    }
+
     const workspace = await this.workspaceService.findOne(+id);
     return workspace ? new WorkspaceDto(workspace) : null;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Put(':id')
   async update(@Param('id') id: string, @Body() body: { adminUser: number, users: number[] }): Promise<WorkspaceDto | null> {
     const workspace = await this.workspaceService.update(+id, body);
     return workspace ? new WorkspaceDto(workspace) : null;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
     return this.workspaceService.remove(+id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Get(':id/condominiums')
   findCondominiums(@Param('id', ParseIntPipe) id: number) {
     return this.workspaceService.findCondominiums(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Get(':id/condominiums/count')
   findCondominiumsCount(@Param('id', ParseIntPipe) id: number) {
     return this.workspaceService.findCondominiumsCount(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Get(':id/maintenances/count')
   findWorkspaceMaintenancesCount(
     @Param('id', ParseIntPipe) id: number,
@@ -58,13 +72,13 @@ export class WorkspaceController {
     return this.workspaceService.findWorkspaceMaintenancesCount(id, status);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Get(':id/condominiums/:condominiumId')
   findCondominiumById(@Param('id', ParseIntPipe) workspaceId: number, @Param('condominiumId', ParseIntPipe) condominiumId: number) {
     return this.workspaceService.findCondominiumsByWorkspaceIdAndCondominiumId(workspaceId, condominiumId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Post(':id/condominiums')
   @UseInterceptors(IdempotencyInterceptor)
   createCondominium(@Param('id') id: number, @Body() body: any) {
@@ -81,7 +95,7 @@ export class WorkspaceController {
     return this.workspaceService.createCondominium(id, condominiumData);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Put(':id/condominiums/:condominiumId')
   updateCondominium(
     @Param('id', ParseIntPipe) id: number,
@@ -92,7 +106,7 @@ export class WorkspaceController {
     return this.workspaceService.updateCondominium(id, condominiumId, data);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Delete(':id/condominiums/:condominiumId')
   deleteCondominium(
     @Param('id', ParseIntPipe) id: number,
@@ -101,7 +115,7 @@ export class WorkspaceController {
     return this.workspaceService.removeCondominium(id, condominiumId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceIdAccessGuard)
   @Get(':workspaceId/condominiums/:condominiumId/maintenances')
   findMaintenances(
     @Param('workspaceId', ParseIntPipe) workspaceId: number,
@@ -111,6 +125,7 @@ export class WorkspaceController {
     return this.workspaceService.findMaintenances(workspaceId, condominiumId, status);
   }
 
+  @UseGuards(JwtAuthGuard, WorkspaceIdAccessGuard)
   @Get(':workspaceId/condominiums/:condominiumId/maintenances/count')
   findMaintenancesCount(
     @Param('workspaceId', ParseIntPipe) workspaceId: number,
@@ -120,7 +135,7 @@ export class WorkspaceController {
     return this.workspaceService.findMaintenancesCount(workspaceId, condominiumId, status);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Post(':id/condominiums/:condominiumId/maintenances')
   @UseInterceptors(IdempotencyInterceptor)
   createMaintenance(
@@ -130,7 +145,7 @@ export class WorkspaceController {
     return this.workspaceService.createMaintenance(condominiumId, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceIdAccessGuard)
   @Put(':workspaceId/condominiums/:condominiumId/maintenances/:maintenanceId')
   updateMaintenance(
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
@@ -140,7 +155,7 @@ export class WorkspaceController {
     return this.workspaceService.updateMaintenance(condominiumId, maintenanceId, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceIdAccessGuard)
   @Delete(':workspaceId/condominiums/:condominiumId/maintenances/:maintenanceId')
   deleteMaintenance(
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
@@ -151,7 +166,7 @@ export class WorkspaceController {
 
   @UseGuards(JwtAuthGuard)
   @Post('update-overdue-maintenances')
-  updateOverdueMaintenances() {
+  updateOverdueMaintenances(@CurrentUser() user: AuthUser) {
     return this.workspaceService.updateOverdueMaintenances();
   }
 }

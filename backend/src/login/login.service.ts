@@ -31,7 +31,15 @@ export class LoginService {
         // Buscar a workspace do usuário
         const workspace = await this.workspaceService.findByUserId(foundUser.id!);
 
-        const payload = { username: user.email, sub: foundUser.id };
+        if (!workspace) {
+            throw new UnauthorizedException('User does not have access to any workspace');
+        }
+
+        const payload = { 
+            username: user.email, 
+            sub: foundUser.id,
+            workspaceId: workspace.id
+        };
         const token = await this.jwtService.signAsync(payload, { expiresIn: jwtConstants.expiresIn });
         
         return { 

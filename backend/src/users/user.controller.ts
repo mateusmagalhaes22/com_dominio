@@ -3,22 +3,33 @@ import { UserService } from './user.service';
 import { User } from './user.entity';
 import { UserDto } from './user.dto';
 import { JwtAuthGuard } from 'src/login/jwt-auth.guard';
+import { UserSelfAccessGuard } from 'src/login/user-self-access.guard';
+import { CurrentUser, type AuthUser } from 'src/login/current-user.decorator';
 import { IdempotencyInterceptor } from 'src/idempotency/idempotency.interceptor';
 
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll(): Promise<UserDto[]> {
-    const users = await this.userService.findAll();
-    return users.map(u => new UserDto(u));
+  async findAll(@Headers('admin-key') adminKey: string): Promise<UserDto[]> {
+    const validAdminKey = process.env.ADMIN_KEY;
+    
+    if (!adminKey || adminKey !== validAdminKey) {
+      throw new UnauthorizedException('Invalid admin key for user access');
+    }
+    
+    const foundUsers = await this.userService.findAll();
+    return foundUsers.map(user => new UserDto(user));
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<UserDto> {
+  async findOne(@Headers('admin-key') adminKey: string, @Param('id') id: string): Promise<UserDto> {
+    const validAdminKey = process.env.ADMIN_KEY;
+    
+    if (!adminKey || adminKey !== validAdminKey) {
+      throw new UnauthorizedException('Invalid admin key for user access');
+    }
     const user = await this.userService.findOne(+id);
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -38,9 +49,13 @@ export class UserController {
     return new UserDto(await this.userService.create(user));
   }
 
-  @UseGuards(JwtAuthGuard)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() user: User): Promise<User> {
+  async update(@Headers('admin-key') adminKey: string, @Param('id') id: string, @Body() user: User): Promise<User> {
+    const validAdminKey = process.env.ADMIN_KEY;
+    
+    if (!adminKey || adminKey !== validAdminKey) {
+      throw new UnauthorizedException('Invalid admin key for user update');
+    }
     const updatedUser = await this.userService.update(+id, user);
     if (!updatedUser) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -48,9 +63,13 @@ export class UserController {
     return updatedUser;
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<void> {
+  async remove(@Headers('admin-key') adminKey: string, @Param('id') id: string): Promise<void> {
+    const validAdminKey = process.env.ADMIN_KEY;
+
+    if (!adminKey || adminKey !== validAdminKey) {
+      throw new UnauthorizedException('Invalid admin key for user deletion');
+    }
     return this.userService.remove(+id);
   }
 }

@@ -152,7 +152,13 @@ export class WorkspaceService {
   }
 
   updateCondominium(id: number, condominiumId: number, data: { name: string; cnpj: string; address: string; }) {
-    return this.condominiumRepository.update({ id: condominiumId, workspace: { id } }, data).then(() => {
+    // Check if there are any properties to update
+    const updateData = { ...data };
+    if (Object.keys(updateData).length === 0) {
+      return this.condominiumRepository.findOne({ where: { id: condominiumId, workspace: { id } } });
+    }
+    
+    return this.condominiumRepository.update({ id: condominiumId, workspace: { id } }, updateData).then(() => {
       return this.condominiumRepository.findOne({ where: { id: condominiumId, workspace: { id } } });
     });
   }
@@ -238,7 +244,15 @@ export class WorkspaceService {
   }
 
   updateMaintenance(condominiumId: number, maintenanceId: number, data: Partial<Maintenance>) {
-    return this.maintenanceRepository.update({ id: maintenanceId, condominium: { id: condominiumId } }, data).then(() => {
+    // Check if there are any properties to update
+    const updateData = { ...data };
+    delete updateData.id; // Remove id from update data if present
+    
+    if (Object.keys(updateData).length === 0) {
+      return this.maintenanceRepository.findOne({ where: { id: maintenanceId, condominium: { id: condominiumId } } });
+    }
+    
+    return this.maintenanceRepository.update({ id: maintenanceId, condominium: { id: condominiumId } }, updateData).then(() => {
       return this.maintenanceRepository.findOne({ where: { id: maintenanceId, condominium: { id: condominiumId } } });
     });
   }

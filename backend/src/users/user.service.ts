@@ -20,7 +20,7 @@ export class UserService implements OnModuleInit {
   async onModuleInit() {
     const count = await this.userRepository.count();
     if (count === 0) {
-      this.create({
+      await this.create({
         name: 'Admin',
         email: loginConstants.adminUser,
         password: loginConstants.adminPassword,
@@ -59,14 +59,30 @@ export class UserService implements OnModuleInit {
 
     const createdUser = await this.userRepository.save(user);
     
-    this.workspaceRepository.create({ adminUser: user });
-    await this.workspaceRepository.save({ adminUser: user });
+    // Create and save workspace properly
+    const workspace = this.workspaceRepository.create({ adminUser: createdUser });
+    await this.workspaceRepository.save(workspace);
 
     return createdUser;
   }
 
   async update(id: number, user: Partial<User>): Promise<User | null> {
-    await this.userRepository.update(id, user);
+
+    const updateData = { ...user };
+    delete updateData.id;
+
+    if (Object.keys(updateData).length === 0) {
+      return this.userRepository.findOne({
+        where: { id },
+        select: ['id', 'name', 'email']
+      });
+    }
+
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+
+    await this.userRepository.update(id, updateData);
     return this.userRepository.findOne({
       where: { id },
       select: ['id', 'name', 'email']
