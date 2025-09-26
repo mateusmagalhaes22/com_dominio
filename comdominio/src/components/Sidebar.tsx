@@ -3,25 +3,21 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import HomeIcon from '@mui/icons-material/Home';
+import BusinessIcon from '@mui/icons-material/Business';
+import PersonIcon from '@mui/icons-material/Person';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 
 const menuItems = [
   {
     name: 'Home',
     href: '/pages/home',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
+    icon: <HomeIcon />,
   },
   {
     name: 'Condomínios',
     href: '/pages/condominios',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M10.5 3L12 2l1.5 1M12 2v8m0 0V2" />
-      </svg>
-    ),
+    icon: <BusinessIcon />,
   },
 ];
 
@@ -54,14 +50,10 @@ export default function Sidebar() {
             onClick={() => setCollapsed(!collapsed)}
             className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
           >
-            <svg 
-              className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeftIcon 
+              className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
+              style={{ fontSize: 20 }}
+            />
           </button>
         </div>
       </div>
@@ -81,7 +73,7 @@ export default function Sidebar() {
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   }`}
                 >
-                  <span className="flex-shrink-0">{item.icon}</span>
+                  <span className="flex-shrink-0" style={{ fontSize: 20 }}>{item.icon}</span>
                   {!collapsed && (
                     <span className="ml-3 font-medium">{item.name}</span>
                   )}
@@ -96,9 +88,7 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-700">
         <div className="flex items-center">
           <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
+            <PersonIcon style={{ fontSize: 20 }} />
           </div>
           {!collapsed && (
             <div className="ml-3">

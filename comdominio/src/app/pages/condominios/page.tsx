@@ -4,6 +4,8 @@ import React from "react";
 import { useRouter } from 'next/navigation';
 import AddCondominiumModal from '../../../components/AddCondominiumModal';
 import { generateIdempotencyKeySync } from '../../../utils/idempotency';
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface Condominium {
     id: number;
@@ -192,9 +194,13 @@ export default function ComdominiumsPage() {
                         fontSize: 14,
                         fontWeight: "bold",
                         boxShadow: "0 2px 4px rgba(33, 150, 243, 0.3)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8
                     }}
                 >
-                    + Adicionar Condomínio
+                    <AddIcon style={{ fontSize: 20 }} />
+                    Adicionar Condomínio
                 </button>
             </div>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "space-around" }}>
@@ -265,7 +271,7 @@ export default function ComdominiumsPage() {
                             }}
                             title={deletingCondominiumId === condo.id ? "Removendo..." : "Remover condomínio"}
                         >
-                            {deletingCondominiumId === condo.id ? "..." : "×"}
+                            {deletingCondominiumId === condo.id ? "..." : <CloseIcon style={{ fontSize: 16 }} />}
                         </button>
                         <h2 style={{ margin: "0 0 12px 0", fontSize: 20, fontWeight: "bold", color: "#000" }}>
                             {condo.name}

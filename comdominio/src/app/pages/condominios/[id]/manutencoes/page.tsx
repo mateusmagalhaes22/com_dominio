@@ -4,6 +4,10 @@ import React from "react";
 import { useRouter, useParams } from 'next/navigation';
 import AddMaintenanceModal from '../../../../../components/AddMaintenanceModal';
 import { generateIdempotencyKeySync } from '../../../../../utils/idempotency';
+import CheckIcon from '@mui/icons-material/Check';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 interface Maintenance {
     name: string;
@@ -269,10 +273,14 @@ export default function MaintenancesPage() {
                             border: "none",
                             borderRadius: 4,
                             cursor: "pointer",
-                            fontSize: 14
+                            fontSize: 14,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8
                         }}
                     >
-                        ← Voltar
+                        <ArrowBackIcon style={{ fontSize: 18 }} />
+                        Voltar
                     </button>
                     <div>
                         <h1 style={{ fontSize: 24, fontWeight: "bold", color: "#333", margin: 0 }}>
@@ -296,10 +304,14 @@ export default function MaintenancesPage() {
                         borderRadius: 4,
                         cursor: "pointer",
                         fontSize: 14,
-                        fontWeight: "bold"
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8
                     }}
                 >
-                    + Adicionar Manutenção
+                    <AddIcon style={{ fontSize: 18 }} />
+                    Adicionar Manutenção
                 </button>
             </div>
 
@@ -366,7 +378,14 @@ export default function MaintenancesPage() {
                                                     fontWeight: "bold"
                                                 }}
                                             >
-                                                {completingMaintenanceId === maintenance.id ? "Concluindo..." : "✓ Concluir"}
+                                                {completingMaintenanceId === maintenance.id ? (
+                                                    "Concluindo..."
+                                                ) : (
+                                                    <>
+                                                        <CheckIcon style={{ fontSize: 16, marginRight: 4 }} />
+                                                        Concluir
+                                                    </>
+                                                )}
                                             </button>
                                         )}
 
@@ -384,7 +403,14 @@ export default function MaintenancesPage() {
                                                 fontWeight: "bold"
                                             }}
                                         >
-                                            {deletingMaintenanceId === maintenance.id ? "Deletando..." : "🗑️ Deletar"}
+                                            {deletingMaintenanceId === maintenance.id ? (
+                                                "Deletando..."
+                                            ) : (
+                                                <>
+                                                    <DeleteIcon style={{ fontSize: 16, marginRight: 4 }} />
+                                                    Deletar
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                     

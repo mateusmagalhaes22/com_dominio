@@ -2,8 +2,6 @@ import { Controller, Get, Post, Put, Delete, Body, Param, NotFoundException, Use
 import { UserService } from './user.service';
 import { User } from './user.entity';
 import { UserDto } from './user.dto';
-import { JwtAuthGuard } from 'src/login/jwt-auth.guard';
-import { UserSelfAccessGuard } from 'src/login/user-self-access.guard';
 import { CurrentUser, type AuthUser } from 'src/login/current-user.decorator';
 import { IdempotencyInterceptor } from 'src/idempotency/idempotency.interceptor';
 
@@ -12,15 +10,17 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  async findAll(@Headers('admin-key') adminKey: string): Promise<UserDto[]> {
+  async findAll(@Headers('admin-key') adminKey: string, @CurrentUser() user: AuthUser): Promise<UserDto[]> {
     const validAdminKey = process.env.ADMIN_KEY;
     
     if (!adminKey || adminKey !== validAdminKey) {
-      throw new UnauthorizedException('Invalid admin key for user access');
+      throw new UnauthorizedException('Invalid admin key for user creation');
     }
-    
-    const foundUsers = await this.userService.findAll();
-    return foundUsers.map(user => new UserDto(user));
+    const foundUser = await this.userService.findAll();
+    if (!foundUser) {
+      throw new NotFoundException(`No users found`);
+    }
+    return foundUser.map(user => new UserDto(user));
   }
 
   @Get(':id')
@@ -28,7 +28,7 @@ export class UserController {
     const validAdminKey = process.env.ADMIN_KEY;
     
     if (!adminKey || adminKey !== validAdminKey) {
-      throw new UnauthorizedException('Invalid admin key for user access');
+      throw new UnauthorizedException('Invalid admin key for user creation');
     }
     const user = await this.userService.findOne(+id);
     if (!user) {
@@ -54,7 +54,7 @@ export class UserController {
     const validAdminKey = process.env.ADMIN_KEY;
     
     if (!adminKey || adminKey !== validAdminKey) {
-      throw new UnauthorizedException('Invalid admin key for user update');
+      throw new UnauthorizedException('Invalid admin key for user creation');
     }
     const updatedUser = await this.userService.update(+id, user);
     if (!updatedUser) {
@@ -68,7 +68,7 @@ export class UserController {
     const validAdminKey = process.env.ADMIN_KEY;
 
     if (!adminKey || adminKey !== validAdminKey) {
-      throw new UnauthorizedException('Invalid admin key for user deletion');
+      throw new UnauthorizedException('Invalid admin key for user creation');
     }
     return this.userService.remove(+id);
   }
