@@ -8,6 +8,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import BuildIcon from '@mui/icons-material/Build';
 import DescriptionIcon from '@mui/icons-material/Description';
+import './home.css';
 
 export default function HomePage() {
 
@@ -99,13 +100,13 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+    <div className="home-container">
+      <div className="home-header">
+        <h1 className="home-title">Dashboard</h1>
       </div>
 
       {/* Cards de estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="home-stats-grid">
         {statsData.map((stat, index) => (
           <StatCard
             key={index}
@@ -119,59 +120,59 @@ export default function HomePage() {
       </div>
 
       {/* Seção de ações rápidas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
-          <div className="space-y-3">
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center">
-                <PersonAddIcon className="text-blue-600 mr-3" style={{ fontSize: 20 }} />
-                <span className="font-medium">Adicionar Novo Morador</span>
+      <div className="home-actions-grid">
+        <div className="home-card">
+          <h3 className="home-card-title">Ações Rápidas</h3>
+          <div className="home-actions-list">
+            <button className="home-action-button">
+              <div className="home-action-content">
+                <PersonAddIcon className="home-action-icon blue" />
+                <span className="home-action-text">Adicionar Novo Morador</span>
               </div>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center">
-                <BuildIcon className="text-green-600 mr-3" style={{ fontSize: 20 }} />
-                <span className="font-medium">Criar Nova Manutenção</span>
+            <button className="home-action-button">
+              <div className="home-action-content">
+                <BuildIcon className="home-action-icon green" />
+                <span className="home-action-text">Criar Nova Manutenção</span>
               </div>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center">
-                <DescriptionIcon className="text-purple-600 mr-3" style={{ fontSize: 20 }} />
-                <span className="font-medium">Gerar Relatório Mensal</span>
+            <button className="home-action-button">
+              <div className="home-action-content">
+                <DescriptionIcon className="home-action-icon purple" />
+                <span className="home-action-text">Gerar Relatório Mensal</span>
               </div>
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Atividades Recentes</h3>
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900">
-                  Nova manutenção criada para o <span className="font-medium">Edifício Solar</span>
+        <div className="home-card">
+          <h3 className="home-card-title">Atividades Recentes</h3>
+          <div className="home-activities-list">
+            <div className="home-activity-item">
+              <div className="home-activity-dot blue"></div>
+              <div className="home-activity-content">
+                <p className="home-activity-text">
+                  Nova manutenção criada para o <span className="home-activity-highlight">Edifício Solar</span>
                 </p>
-                <p className="text-xs text-gray-500">2 horas atrás</p>
+                <p className="home-activity-time">2 horas atrás</p>
               </div>
             </div>
-            <div className="flex items-start space-x-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900">
-                  Morador aprovado para o <span className="font-medium">Apartamento 501</span>
+            <div className="home-activity-item">
+              <div className="home-activity-dot green"></div>
+              <div className="home-activity-content">
+                <p className="home-activity-text">
+                  Morador aprovado para o <span className="home-activity-highlight">Apartamento 501</span>
                 </p>
-                <p className="text-xs text-gray-500">5 horas atrás</p>
+                <p className="home-activity-time">5 horas atrás</p>
               </div>
             </div>
-            <div className="flex items-start space-x-3">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900">
-                  Relatório mensal gerado para <span className="font-medium">Janeiro 2025</span>
+            <div className="home-activity-item">
+              <div className="home-activity-dot yellow"></div>
+              <div className="home-activity-content">
+                <p className="home-activity-text">
+                  Relatório mensal gerado para <span className="home-activity-highlight">Janeiro 2025</span>
                 </p>
-                <p className="text-xs text-gray-500">1 dia atrás</p>
+                <p className="home-activity-time">1 dia atrás</p>
               </div>
             </div>
           </div>

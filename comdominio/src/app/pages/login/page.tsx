@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BusinessIcon from '@mui/icons-material/Business';
+import './login.css';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -67,6 +68,7 @@ export default function LoginPage() {
       }
 
     } catch (error) {
+      console.error('Erro ao fazer login:', error);
       alert('Erro ao fazer login. Verifique sua conexão e tente novamente.');
     }
   };

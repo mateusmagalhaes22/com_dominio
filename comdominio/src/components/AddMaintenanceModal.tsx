@@ -1,128 +1,124 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+
+interface Maintenance {
+    id: number;
+    name: string;
+    description: string;
+    status: string;
+    endDate?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+interface MaintenanceFormData {
+    name: string;
+    description: string;
+    endDate: string;
+    status: string;
+}
 
 interface AddMaintenanceModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (formData: {
-        name: string;
-        description: string;
-        status: string;
-        endDate: string;
-    }) => Promise<void>;
-    isLoading: boolean;
-    existingMaintenances: Array<{
-        id: number;
-        name: string;
-        description: string;
-        status: string;
-        createdAt: string;
-        updatedAt: string;
-        endDate: string;
-    }>;
+    onSubmit: (data: MaintenanceFormData) => Promise<void>;
+    isLoading?: boolean;
+    existingMaintenances: Maintenance[];
 }
 
-const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
-    isOpen,
-    onClose,
-    onSubmit,
-    isLoading,
-    existingMaintenances
-}) => {
-    const [formData, setFormData] = useState({
+export default function AddMaintenanceModal({ 
+    isOpen, 
+    onClose, 
+    onSubmit, 
+    isLoading = false,
+    existingMaintenances 
+}: AddMaintenanceModalProps) {
+    const [formData, setFormData] = React.useState<MaintenanceFormData>({
         name: '',
         description: '',
-        status: 'pendente',
+        endDate: '',
+        status: 'pendente'
+    });
+
+    const [errors, setErrors] = React.useState({
+        name: '',
+        description: '',
         endDate: ''
     });
 
-    const [errors, setErrors] = useState({
-        name: '',
-        description: '',
-        endDate: ''
-    });
-
-    const validateForm = () => {
-        const newErrors = {
-            name: '',
-            description: '',
-            endDate: ''
-        };
-
-        if (!formData.name.trim()) {
-            newErrors.name = 'Nome é obrigatório';
-        } else {
-            // Verificar se já existe uma manutenção com o mesmo nome
-            const duplicateName = existingMaintenances.find(
-                maintenance => maintenance.name.toLowerCase() === formData.name.trim().toLowerCase()
-            );
-            if (duplicateName) {
-                newErrors.name = 'Já existe uma manutenção com este nome';
-            }
+    const validateName = (name: string): string => {
+        if (!name.trim()) {
+            return 'Nome é obrigatório';
         }
-
-        if (!formData.endDate) {
-            newErrors.endDate = 'Data de conclusão é obrigatória';
+        if (name.trim().length < 3) {
+            return 'Nome deve ter pelo menos 3 caracteres';
         }
-
-        setErrors(newErrors);
-        return !Object.values(newErrors).some(error => error !== '');
+        
+        // Verificar se já existe uma manutenção com o mesmo nome
+        const existingMaintenance = existingMaintenances.find(
+            m => m.name.toLowerCase() === name.trim().toLowerCase()
+        );
+        if (existingMaintenance) {
+            return 'Já existe uma manutenção com este nome';
+        }
+        
+        return '';
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-
-        // Clear error when user starts typing
-        if (errors[name as keyof typeof errors]) {
-            setErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
+    const validateDescription = (description: string): string => {
+        if (!description.trim()) {
+            return 'Descrição é obrigatória';
         }
-
-        // Validação em tempo real para nome duplicado
-        if (name === 'name' && value.trim()) {
-            const duplicateName = existingMaintenances.find(
-                maintenance => maintenance.name.toLowerCase() === value.trim().toLowerCase()
-            );
-            if (duplicateName) {
-                setErrors(prev => ({
-                    ...prev,
-                    name: 'Já existe uma manutenção com este nome'
-                }));
-            }
+        if (description.trim().length < 10) {
+            return 'Descrição deve ter pelo menos 10 caracteres';
         }
+        return '';
+    };
+
+    const validateEndDate = (endDate: string): string => {
+        if (!endDate) {
+            return 'Data de prazo é obrigatória';
+        }
+        
+        const selectedDate = new Date(endDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (selectedDate < today) {
+            return 'Data de prazo não pode ser no passado';
+        }
+        
+        return '';
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!validateForm()) {
+        const nameError = validateName(formData.name);
+        const descriptionError = validateDescription(formData.description);
+
+        setErrors({
+            name: nameError,
+            description: descriptionError,
+            endDate: ''
+        });
+
+        if (nameError || descriptionError) {
             return;
         }
 
         try {
-            await onSubmit(formData);
-            // Reset form after successful submission
-            setFormData({
-                name: '',
-                description: '',
-                status: 'pendente',
-                endDate: ''
+            await onSubmit({
+                ...formData,
+                name: formData.name.trim(),
+                description: formData.description.trim(),
+                status: 'pendente'
             });
-            setErrors({
-                name: '',
-                description: '',
-                endDate: ''
-            });
-            // onClose() is now handled in the parent component after successful API call
+            
+            handleClose();
         } catch (error) {
-            console.error('Erro ao adicionar manutenção:', error);
+            console.error('Erro ao criar manutenção:', error);
         }
     };
 
@@ -130,8 +126,8 @@ const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
         setFormData({
             name: '',
             description: '',
-            status: 'pendente',
-            endDate: ''
+            endDate: '',
+            status: 'pendente'
         });
         setErrors({
             name: '',
@@ -156,126 +152,202 @@ const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
             justifyContent: 'center',
             zIndex: 1000,
         }}>
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                        Adicionar Nova Manutenção
+            <div style={{
+                backgroundColor: 'white',
+                borderRadius: 8,
+                padding: 24,
+                width: '100%',
+                maxWidth: 500,
+                maxHeight: '90vh',
+                overflow: 'auto',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            }}>
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 20,
+                }}>
+                    <h2 style={{
+                        margin: 0,
+                        fontSize: 20,
+                        fontWeight: 'bold',
+                        color: '#333',
+                    }}>
+                        Adicionar Manutenção
                     </h2>
                     <button
                         onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600"
                         disabled={isLoading}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: 24,
+                            cursor: isLoading ? 'not-allowed' : 'pointer',
+                            color: '#666',
+                            padding: 0,
+                            width: 30,
+                            height: 30,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        ×
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                            Nome da Manutenção *
+                <form onSubmit={handleSubmit}>
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: 4,
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: '#333',
+                        }}>
+                            Nome da Manutenção
                         </label>
                         <input
                             type="text"
-                            id="name"
-                            name="name"
                             value={formData.name}
-                            onChange={handleInputChange}
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.name ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            style={{ color: '#333' }}
-                            placeholder="Ex: Limpeza da piscina"
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            required
                             disabled={isLoading}
+                            style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: '1px solid #ddd',
+                                borderRadius: 4,
+                                fontSize: 14,
+                                outline: 'none',
+                                boxSizing: 'border-box',
+                                color: '#333'
+                            }}
                         />
-                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                        {errors.name && (
+                            <span style={{
+                                display: 'block',
+                                color: '#f44336',
+                                fontSize: 12,
+                                marginTop: 4
+                            }}>
+                                {errors.name}
+                            </span>
+                        )}
                     </div>
 
-                    {/* Descrição */}
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: 4,
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: '#333',
+                        }}>
                             Descrição
                         </label>
                         <textarea
-                            id="description"
-                            name="description"
                             value={formData.description}
-                            onChange={handleInputChange}
-                            rows={3}
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.description ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            style={{ color: '#333' }}
-                            placeholder="Descreva os detalhes da manutenção..."
+                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                            required
                             disabled={isLoading}
+                            rows={4}
+                            style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: '1px solid #ddd',
+                                borderRadius: 4,
+                                fontSize: 14,
+                                outline: 'none',
+                                resize: 'vertical',
+                                fontFamily: 'inherit',
+                                boxSizing: 'border-box',
+                                color: '#333'
+                            }}
                         />
-                        {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
+                        {errors.description && (
+                            <span style={{
+                                display: 'block',
+                                color: '#f44336',
+                                fontSize: 12,
+                                marginTop: 4
+                            }}>
+                                {errors.description}
+                            </span>
+                        )}
                     </div>
 
-                    {/* Status */}
-                    <div>
-                        <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                            Status
-                        </label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={isLoading}
-                            style={{ color: '#333' }}
-                        >
-                            <option value="pendente">Pendente</option>
-                            <option value="atrasado">Atrasado</option>
-                            <option value="feito">Concluído</option>
-                        </select>
-                    </div>
-
-                    {/* Data de Conclusão */}
-                    <div>
-                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-                            Data de Conclusão *
+                    <div style={{ marginBottom: 24 }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: 4,
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: '#333',
+                        }}>
+                            Data de Prazo
                         </label>
                         <input
                             type="date"
-                            id="endDate"
-                            name="endDate"
                             value={formData.endDate}
-                            onChange={handleInputChange}
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.endDate ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            style={{ color: '#333' }}
+                            onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                            required
                             disabled={isLoading}
+                            style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: '1px solid #ddd',
+                                borderRadius: 4,
+                                fontSize: 14,
+                                outline: 'none',
+                                boxSizing: 'border-box',
+                                color: '#333'
+                            }}
                         />
-                        {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
                     </div>
 
-                    {/* Botões */}
-                    <div className="flex space-x-3 pt-4">
+                    <div style={{
+                        display: 'flex',
+                        gap: 12,
+                        justifyContent: 'flex-end'
+                    }}>
                         <button
                             type="button"
                             onClick={handleClose}
-                            className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
                             disabled={isLoading}
+                            style={{
+                                padding: '10px 20px',
+                                border: '1px solid #ddd',
+                                borderRadius: 4,
+                                backgroundColor: 'white',
+                                color: '#333',
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
+                                fontSize: 14,
+                                fontWeight: 'bold'
+                            }}
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isLoading}
+                            style={{
+                                padding: '10px 20px',
+                                border: 'none',
+                                borderRadius: 4,
+                                backgroundColor: isLoading ? '#ccc' : '#2196f3',
+                                color: 'white',
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
+                                fontSize: 14,
+                                fontWeight: 'bold'
+                            }}
                         >
-                            {isLoading ? 'Adicionando...' : 'Adicionar Manutenção'}
+                            {isLoading ? 'Adicionando...' : 'Adicionar'}
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     );
-};
-
-export default AddMaintenanceModal;
+}

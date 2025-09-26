@@ -8,6 +8,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import './manutencoes.css';
 
 interface Maintenance {
     name: string;
@@ -247,47 +248,29 @@ export default function MaintenancesPage() {
 
     if (loading) {
         return (
-            <div style={{ 
-                padding: 24, 
-                background: "#f9f9f9", 
-                minHeight: "100vh",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center"
-            }}>
-                <p>Carregando...</p>
+            <div className="maintenances-loading">
+                <p className="maintenances-loading-text">Carregando...</p>
             </div>
         );
     }
 
     return (
-        <div style={{ padding: 24, background: "#f9f9f9", minHeight: "100vh" }}>
-            <div style={{ marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div className="maintenances-container">
+            <div className="maintenances-header">
+                <div className="maintenances-header-left">
                     <button
                         onClick={() => router.back()}
-                        style={{
-                            padding: "8px 16px",
-                            background: "#2196f3",
-                            color: "white",
-                            border: "none",
-                            borderRadius: 4,
-                            cursor: "pointer",
-                            fontSize: 14,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8
-                        }}
+                        className="maintenances-back-button"
                     >
                         <ArrowBackIcon style={{ fontSize: 18 }} />
                         Voltar
                     </button>
                     <div>
-                        <h1 style={{ fontSize: 24, fontWeight: "bold", color: "#333", margin: 0 }}>
+                        <h1 className="maintenances-title">
                             Manutenções
                         </h1>
                         {condominium && (
-                            <p style={{ fontSize: 16, color: "#666", margin: "4px 0 0 0" }}>
+                            <p className="maintenances-subtitle">
                                 {condominium.name}
                             </p>
                         )}
@@ -296,19 +279,7 @@ export default function MaintenancesPage() {
                 
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    style={{
-                        padding: "10px 20px",
-                        background: "#2196f3",
-                        color: "white",
-                        border: "none",
-                        borderRadius: 4,
-                        cursor: "pointer",
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8
-                    }}
+                    className="maintenances-add-button"
                 >
                     <AddIcon style={{ fontSize: 18 }} />
                     Adicionar Manutenção
@@ -317,121 +288,79 @@ export default function MaintenancesPage() {
 
             {/* Lista de manutenções */}
             {maintenances.length === 0 ? (
-                <div style={{
-                    background: "#fff",
-                    padding: 32,
-                    borderRadius: 8,
-                    textAlign: "center",
-                    border: "1px solid #e0e0e0"
-                }}>
-                    <p style={{ color: "#666", fontSize: 16 }}>
+                <div className="maintenances-empty">
+                    <p className="maintenances-empty-text">
                         Nenhuma manutenção encontrada para este condomínio.
                     </p>
                 </div>
             ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="maintenances-list">
                     {maintenances.map((maintenance) => (
-                        <div
-                            key={maintenance.id}
-                            style={{
-                                background: "#fff",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 8,
-                                padding: 20,
-                                boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
-                            }}
-                        >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                                <h3 style={{ margin: 0, fontSize: 18, fontWeight: "bold", color: "#333" }}>
-                                    {maintenance.name}
-                                </h3>
-                                <p style={{ margin: 0, color: "#666", fontSize: 14 }}>
-                                    <strong>Prazo:</strong> {maintenance.endDate? formatDate(maintenance.endDate) : 'Não definido'}
-                                </p>
-                                <p style={{ margin: 0, color: "#666", fontSize: 14 }}>
-                                    <strong>Criado em:</strong> {maintenance.createdAt? formatDate(maintenance.createdAt) : 'Não definido'}
-                                </p>
-                                <p style={{ margin: 0, color: "#666", fontSize: 14 }}>
-                                    <strong>Ultima atualização:</strong> {maintenance.updatedAt? formatDate(maintenance.updatedAt) : 'Não definido'}
-                                </p>
+                        <div key={maintenance.id} className="maintenance-card">
+                            <div className="maintenance-content">
+                                <div className="maintenance-info-section">
+                                    <h3 className="maintenance-title">
+                                        {maintenance.name}
+                                    </h3>
+                                    <span className="maintenance-date-item">
+                                        <strong>Prazo:</strong> {maintenance.endDate ? formatDate(maintenance.endDate) : 'Não definido'}
+                                    </span>
+                                    <span className="maintenance-date-item">
+                                        <strong>Criado em:</strong> {maintenance.createdAt ? formatDate(maintenance.createdAt) : 'Não definido'}
+                                    </span>
+                                    <span className="maintenance-date-item">
+                                        <strong>Última atualização:</strong> {maintenance.updatedAt ? formatDate(maintenance.updatedAt) : 'Não definido'}
+                                    </span>
+                                </div>
                                 
-                                <div style={{ 
-                                    display: "flex", 
-                                    alignItems: "center", 
-                                    justifyContent: "space-between",
-                                    marginTop: 8
-                                }}>
-                                    
-                                    <div style={{ display: "flex", gap: 8, marginRight: 16}}>
-                                        {maintenance.status !== 'feito' && (
-                                            <button
-                                                onClick={() => handleCompleteMaintenance(maintenance.id)}
-                                                disabled={completingMaintenanceId === maintenance.id}
-                                                style={{
-                                                    padding: "6px 12px",
-                                                    background: completingMaintenanceId === maintenance.id ? "#ccc" : "#4caf50",
-                                                    color: "white",
-                                                    border: "none",
-                                                    borderRadius: 4,
-                                                    cursor: completingMaintenanceId === maintenance.id ? "not-allowed" : "pointer",
-                                                    fontSize: 12,
-                                                    fontWeight: "bold"
-                                                }}
-                                            >
-                                                {completingMaintenanceId === maintenance.id ? (
-                                                    "Concluindo..."
-                                                ) : (
-                                                    <>
-                                                        <CheckIcon style={{ fontSize: 16, marginRight: 4 }} />
-                                                        Concluir
-                                                    </>
-                                                )}
-                                            </button>
-                                        )}
-
+                                <div className="maintenance-actions">
+                                    {maintenance.status !== 'feito' && (
                                         <button
-                                            onClick={() => handleDeleteMaintenance(maintenance.id)}
-                                            disabled={deletingMaintenanceId === maintenance.id}
-                                            style={{
-                                                padding: "6px 12px",
-                                                background: deletingMaintenanceId === maintenance.id ? "#ccc" : "#f44336",
-                                                color: "white",
-                                                border: "none",
-                                                borderRadius: 4,
-                                                cursor: deletingMaintenanceId === maintenance.id ? "not-allowed" : "pointer",
-                                                fontSize: 12,
-                                                fontWeight: "bold"
-                                            }}
+                                            onClick={() => handleCompleteMaintenance(maintenance.id)}
+                                            disabled={completingMaintenanceId === maintenance.id}
+                                            className={`maintenance-action-btn maintenance-complete-btn ${
+                                                completingMaintenanceId === maintenance.id ? 'disabled' : ''
+                                            }`}
                                         >
-                                            {deletingMaintenanceId === maintenance.id ? (
-                                                "Deletando..."
+                                            {completingMaintenanceId === maintenance.id ? (
+                                                "Concluindo..."
                                             ) : (
                                                 <>
-                                                    <DeleteIcon style={{ fontSize: 16, marginRight: 4 }} />
-                                                    Deletar
+                                                    <CheckIcon style={{ fontSize: 16, marginRight: 4 }} />
+                                                    Concluir
                                                 </>
                                             )}
                                         </button>
-                                    </div>
-                                    
-                                    <span
-                                        style={{
-                                            padding: "4px 12px",
-                                            borderRadius: 20,
-                                            fontSize: 12,
-                                            fontWeight: "bold",
-                                            color: "white",
-                                            background: getStatusColor(maintenance.status)
-                                        }}
-                                    >
-                                        {maintenance.status}
-                                    </span>
-                                </div>
-                            </div>
+                                    )}
 
-                            <p style={{ margin: "0 0 12px 0", color: "#666", lineHeight: 1.5, wordBreak: "break-all" }}>
+                                    <button
+                                        onClick={() => handleDeleteMaintenance(maintenance.id)}
+                                        disabled={deletingMaintenanceId === maintenance.id}
+                                        className={`maintenance-action-btn maintenance-delete-btn ${
+                                            deletingMaintenanceId === maintenance.id ? 'disabled' : ''
+                                        }`}
+                                    >
+                                        {deletingMaintenanceId === maintenance.id ? (
+                                            "Deletando..."
+                                        ) : (
+                                            <>
+                                                <DeleteIcon style={{ fontSize: 16, marginRight: 4 }} />
+                                                Deletar
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                <span
+                                    className="maintenance-status-badge"
+                                    style={{ background: getStatusColor(maintenance.status) }}
+                                >
+                                    {maintenance.status}
+                                </span>
+                            </div>
+                            
+                            <div className="maintenance-description">
                                 {maintenance.description}
-                            </p>
+                            </div>
                         </div>
                     ))}
                 </div>

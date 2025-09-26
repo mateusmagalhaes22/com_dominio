@@ -1,3 +1,5 @@
+import './StatCard.css';
+
 interface StatCardProps {
   title: string;
   value: string | number;
@@ -16,17 +18,17 @@ export default function StatCard({
   className = ''
 }: StatCardProps) {
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow ${className}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <div className={`p-2 ${bgColor} rounded-lg`}>
-            <div className={`w-6 h-6 ${textColor}`}>
+    <div className={`stat-card ${className}`}>
+      <div className="stat-card-content">
+        <div className="stat-card-info">
+          <div className={`stat-card-icon-container ${bgColor}`}>
+            <div className={`stat-card-icon ${textColor}`}>
               {icon}
             </div>
           </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-semibold text-gray-900">{value}</p>
+          <div className="stat-card-details">
+            <p className="stat-card-title">{title}</p>
+            <p className="stat-card-value">{value}</p>
           </div>
         </div>
       </div>

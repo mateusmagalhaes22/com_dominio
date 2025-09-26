@@ -7,6 +7,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import './Sidebar.css';
 
 const menuItems = [
   {
@@ -39,43 +40,38 @@ export default function Sidebar() {
   }, []);
 
   return (
-    <div className={`bg-gray-900 text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} min-h-screen flex flex-col`}>
+    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <div className="flex items-center justify-between">
+      <div className="sidebar-header">
+        <div className="sidebar-header-content">
           {!collapsed && (
-            <h1 className="text-xl font-bold">Condomínio</h1>
+            <h1 className="sidebar-title">Condomínio</h1>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+            className="sidebar-toggle-button"
           >
             <ChevronLeftIcon 
-              className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
-              style={{ fontSize: 20 }}
+              className={`sidebar-toggle-icon ${collapsed ? 'rotated' : ''}`}
             />
           </button>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
+      <nav className="sidebar-nav">
+        <ul className="sidebar-menu">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <li key={item.name}>
+              <li key={item.name} className="sidebar-menu-item">
                 <Link
                   href={item.href}
-                  className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  }`}
+                  className={`sidebar-menu-link ${isActive ? 'active' : ''}`}
                 >
-                  <span className="flex-shrink-0" style={{ fontSize: 20 }}>{item.icon}</span>
+                  <span className="sidebar-menu-icon">{item.icon}</span>
                   {!collapsed && (
-                    <span className="ml-3 font-medium">{item.name}</span>
+                    <span className="sidebar-menu-text">{item.name}</span>
                   )}
                 </Link>
               </li>
@@ -85,14 +81,14 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer/User */}
-      <div className="p-4 border-t border-gray-700">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-            <PersonIcon style={{ fontSize: 20 }} />
+      <div className="sidebar-footer">
+        <div className="sidebar-user">
+          <div className="sidebar-user-avatar">
+            <PersonIcon />
           </div>
           {!collapsed && (
-            <div className="ml-3">
-              <p className="text-sm font-medium">{userName}</p>
+            <div className="sidebar-user-info">
+              <p className="sidebar-user-name">{userName}</p>
               <button 
                 onClick={() => {
                   localStorage.removeItem('token');
@@ -100,7 +96,7 @@ export default function Sidebar() {
                   localStorage.removeItem('user');
                   window.location.href = '/pages/login';
                 }}
-                className="text-xs text-gray-400 hover:text-white transition-colors cursor-pointer"
+                className="sidebar-logout-button"
               >
                 Sair
               </button>
