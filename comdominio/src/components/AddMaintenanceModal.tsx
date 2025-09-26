@@ -12,13 +12,23 @@ interface AddMaintenanceModalProps {
         endDate: string;
     }) => Promise<void>;
     isLoading: boolean;
+    existingMaintenances: Array<{
+        id: number;
+        name: string;
+        description: string;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+        endDate: string;
+    }>;
 }
 
 const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
     isOpen,
     onClose,
     onSubmit,
-    isLoading
+    isLoading,
+    existingMaintenances
 }) => {
     const [formData, setFormData] = useState({
         name: '',
@@ -42,6 +52,14 @@ const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
 
         if (!formData.name.trim()) {
             newErrors.name = 'Nome é obrigatório';
+        } else {
+            // Verificar se já existe uma manutenção com o mesmo nome
+            const duplicateName = existingMaintenances.find(
+                maintenance => maintenance.name.toLowerCase() === formData.name.trim().toLowerCase()
+            );
+            if (duplicateName) {
+                newErrors.name = 'Já existe uma manutenção com este nome';
+            }
         }
 
         if (!formData.endDate) {
@@ -66,6 +84,19 @@ const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
                 [name]: ''
             }));
         }
+
+        // Validação em tempo real para nome duplicado
+        if (name === 'name' && value.trim()) {
+            const duplicateName = existingMaintenances.find(
+                maintenance => maintenance.name.toLowerCase() === value.trim().toLowerCase()
+            );
+            if (duplicateName) {
+                setErrors(prev => ({
+                    ...prev,
+                    name: 'Já existe uma manutenção com este nome'
+                }));
+            }
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -81,7 +112,7 @@ const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
             setFormData({
                 name: '',
                 description: '',
-                status: 'PENDING',
+                status: 'pendente',
                 endDate: ''
             });
             setErrors({
@@ -89,7 +120,7 @@ const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
                 description: '',
                 endDate: ''
             });
-            onClose();
+            // onClose() is now handled in the parent component after successful API call
         } catch (error) {
             console.error('Erro ao adicionar manutenção:', error);
         }
@@ -99,7 +130,7 @@ const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
         setFormData({
             name: '',
             description: '',
-            status: 'PENDING',
+            status: 'pendente',
             endDate: ''
         });
         setErrors({

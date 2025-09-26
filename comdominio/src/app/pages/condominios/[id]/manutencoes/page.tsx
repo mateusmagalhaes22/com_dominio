@@ -87,6 +87,16 @@ export default function MaintenancesPage() {
         status: string;
         endDate: string;
     }) => {
+        // Verificar se já existe uma manutenção com o mesmo nome
+        const existingMaintenance = maintenances.find(
+            maintenance => maintenance.name.toLowerCase() === formData.name.toLowerCase()
+        );
+        
+        if (existingMaintenance) {
+            alert('Já existe uma manutenção com este nome. Por favor, escolha um nome diferente.');
+            return;
+        }
+
         setIsAddingMaintenance(true);
         
         const workspaceId = localStorage.getItem('workspaceId');
@@ -104,7 +114,7 @@ export default function MaintenancesPage() {
             });
 
             if (response.ok) {
-                // Refresh maintenances list
+                
                 const maintenanceResponse = await fetch(
                     `${baseUrl}/workspaces/${workspaceId}/condominiums/${condominiumId}/maintenances`,
                     {
@@ -117,12 +127,21 @@ export default function MaintenancesPage() {
                 if (maintenanceResponse.ok) {
                     const maintenanceData = await maintenanceResponse.json();
                     setMaintenances(maintenanceData);
+                    
+                    // Fechar o modal após sucesso
+                    setIsModalOpen(false);
+                } else {
+                    console.error('Erro ao buscar manutenções atualizadas:', maintenanceResponse.statusText);
+                    alert('Manutenção criada, mas erro ao atualizar lista');
                 }
             } else {
-                console.error('Erro ao criar manutenção:', response.statusText);
+                const errorText = await response.text();
+                console.error('Erro ao criar manutenção:', response.status, response.statusText, errorText);
+                alert(`Erro ao criar manutenção: ${response.statusText}`);
             }
         } catch (error) {
             console.error('Erro ao criar manutenção:', error);
+            alert('Erro ao criar manutenção');
         } finally {
             setIsAddingMaintenance(false);
         }
@@ -186,7 +205,6 @@ export default function MaintenancesPage() {
             );
 
             if (response.ok) {
-                // Update local state
                 setMaintenances(prevMaintenances => 
                     prevMaintenances.map(m => 
                         m.id === maintenanceId 
@@ -313,7 +331,7 @@ export default function MaintenancesPage() {
                         >
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: "bold", color: "#333" }}>
-                                    Manutenção #{maintenance.id}: {maintenance.name}
+                                    {maintenance.name}
                                 </h3>
                                 <p style={{ margin: 0, color: "#666", fontSize: 14 }}>
                                     <strong>Prazo:</strong> {maintenance.endDate? formatDate(maintenance.endDate) : 'Não definido'}
@@ -384,8 +402,8 @@ export default function MaintenancesPage() {
                                     </span>
                                 </div>
                             </div>
-                            
-                            <p style={{ margin: "0 0 12px 0", color: "#666", lineHeight: 1.5 }}>
+
+                            <p style={{ margin: "0 0 12px 0", color: "#666", lineHeight: 1.5, wordBreak: "break-all" }}>
                                 {maintenance.description}
                             </p>
                         </div>
@@ -398,6 +416,7 @@ export default function MaintenancesPage() {
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleAddMaintenance}
                 isLoading={isAddingMaintenance}
+                existingMaintenances={maintenances}
             />
         </div>
     );

@@ -38,7 +38,6 @@ export default function LoginPage() {
       });
       
       if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
         
         if (res.status === 401) {
           alert('Email ou senha incorretos');

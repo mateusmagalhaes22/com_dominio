@@ -34,6 +34,16 @@ export default function ComdominiumsPage() {
     };
 
     const handleAddCondominium = async (formData: {name: string, cnpj: string, address: string, units: number}) => {
+        // Verificar se já existe um condomínio com o mesmo nome
+        const existingCondominium = condominiums.find(
+            condominium => condominium.name.toLowerCase() === formData.name.toLowerCase()
+        );
+        
+        if (existingCondominium) {
+            alert('Já existe um condomínio com este nome. Por favor, escolha um nome diferente.');
+            return;
+        }
+
         setLoading(true);
         
         const workspaceId = localStorage.getItem('workspaceId');
@@ -268,6 +278,7 @@ export default function ComdominiumsPage() {
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleAddCondominium}
                 loading={loading}
+                existingCondominiums={condominiums}
             />
         </div>
     );

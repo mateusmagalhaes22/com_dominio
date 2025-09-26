@@ -14,9 +14,18 @@ interface AddCondominiumModalProps {
     onClose: () => void;
     onSubmit: (data: CondominiumFormData) => Promise<void>;
     loading?: boolean;
+    existingCondominiums: Array<{
+        id: number;
+        name: string;
+        address: string;
+        cnpj: string;
+        units: number;
+        pendingMaintenanceAmount: number;
+        overdueMaintenanceAmount: number;
+    }>;
 }
 
-export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading = false }: AddCondominiumModalProps) {
+export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading = false, existingCondominiums }: AddCondominiumModalProps) {
     const [formData, setFormData] = React.useState<CondominiumFormData>({
         name: '',
         cnpj: '',
@@ -24,24 +33,141 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
         units: 0
     });
 
+    const [errors, setErrors] = React.useState({
+        name: '',
+        cnpj: '',
+        address: '',
+        units: ''
+    });
+
+    const formatCNPJ = (value: string) => {
+        // Remove todos os caracteres não numéricos
+        const cleanValue = value.replace(/\D/g, '');
+        
+        // Aplica a máscara: XX.XXX.XXX/XXXX-XX
+        if (cleanValue.length <= 2) {
+            return cleanValue;
+        } else if (cleanValue.length <= 5) {
+            return cleanValue.replace(/(\d{2})(\d+)/, '$1.$2');
+        } else if (cleanValue.length <= 8) {
+            return cleanValue.replace(/(\d{2})(\d{3})(\d+)/, '$1.$2.$3');
+        } else if (cleanValue.length <= 12) {
+            return cleanValue.replace(/(\d{2})(\d{3})(\d{3})(\d+)/, '$1.$2.$3/$4');
+        } else {
+            return cleanValue.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, '$1.$2.$3/$4-$5');
+        }
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: name === 'units' ? parseInt(value) || 0 : value
-        }));
+        
+        // Aplicar formatação específica para cada campo
+        if (name === 'cnpj') {
+            const formattedCNPJ = formatCNPJ(value);
+            setFormData(prev => ({
+                ...prev,
+                [name]: formattedCNPJ
+            }));
+        } else if (name === 'units') {
+            const unitsValue = parseInt(value) || 0;
+            setFormData(prev => ({
+                ...prev,
+                [name]: unitsValue
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+
+        // Limpar erro quando usuário começa a digitar
+        if (errors[name as keyof typeof errors]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
+
+        // Validação em tempo real para nome duplicado
+        if (name === 'name' && value.trim()) {
+            const duplicateName = existingCondominiums.find(
+                condominium => condominium.name.toLowerCase() === value.trim().toLowerCase()
+            );
+            if (duplicateName) {
+                setErrors(prev => ({
+                    ...prev,
+                    name: 'Já existe um condomínio com este nome'
+                }));
+            }
+        }
+    };
+
+    const validateForm = () => {
+        const newErrors = {
+            name: '',
+            cnpj: '',
+            address: '',
+            units: ''
+        };
+
+        if (!formData.name.trim()) {
+            newErrors.name = 'Nome é obrigatório';
+        } else {
+            const duplicateName = existingCondominiums.find(
+                condominium => condominium.name.toLowerCase() === formData.name.trim().toLowerCase()
+            );
+            if (duplicateName) {
+                newErrors.name = 'Já existe um condomínio com este nome';
+            }
+        }
+
+        if (!formData.cnpj.trim()) {
+            newErrors.cnpj = 'CNPJ é obrigatório';
+        } else {
+            // Verificar se o CNPJ tem 14 dígitos (removendo formatação)
+            const cnpjNumbers = formData.cnpj.replace(/\D/g, '');
+            if (cnpjNumbers.length !== 14) {
+                newErrors.cnpj = 'CNPJ deve ter 14 dígitos';
+            }
+        }
+
+        if (!formData.address.trim()) {
+            newErrors.address = 'Endereço é obrigatório';
+        }
+
+        if (!formData.units || formData.units < 1) {
+            newErrors.units = 'Número de unidades deve ser maior que zero';
+        }
+
+        setErrors(newErrors);
+        return !Object.values(newErrors).some(error => error !== '');
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await onSubmit(formData);
-        // Reset form after successful submission
-        setFormData({
-            name: '',
-            cnpj: '',
-            address: '',
-            units: 0
-        });
+        
+        if (!validateForm()) {
+            return;
+        }
+
+        try {
+            await onSubmit(formData);
+            setFormData({
+                name: '',
+                cnpj: '',
+                address: '',
+                units: 0
+            });
+            setErrors({
+                name: '',
+                cnpj: '',
+                address: '',
+                units: ''
+            });
+        } catch (error) {
+            console.error('Erro ao adicionar condomínio:', error);
+        }
     };
 
     const handleClose = () => {
@@ -50,6 +176,12 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
             cnpj: '',
             address: '',
             units: 0
+        });
+        setErrors({
+            name: '',
+            cnpj: '',
+            address: '',
+            units: ''
         });
         onClose();
     };
@@ -135,7 +267,7 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             style={{
                                 width: '100%',
                                 padding: 12,
-                                border: '1px solid #ddd',
+                                border: `1px solid ${errors.name ? '#ff4444' : '#ddd'}`,
                                 borderRadius: 4,
                                 fontSize: 14,
                                 boxSizing: 'border-box',
@@ -143,6 +275,16 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             }}
                             placeholder="Digite o nome do condomínio"
                         />
+                        {errors.name && (
+                            <span style={{
+                                color: '#ff4444',
+                                fontSize: 12,
+                                marginTop: 4,
+                                display: 'block'
+                            }}>
+                                {errors.name}
+                            </span>
+                        )}
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
@@ -162,10 +304,11 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             onChange={handleInputChange}
                             required
                             disabled={loading}
+                            maxLength={18} // XX.XXX.XXX/XXXX-XX = 18 caracteres
                             style={{
                                 width: '100%',
                                 padding: 12,
-                                border: '1px solid #ddd',
+                                border: `1px solid ${errors.cnpj ? '#ff4444' : '#ddd'}`,
                                 borderRadius: 4,
                                 fontSize: 14,
                                 boxSizing: 'border-box',
@@ -173,6 +316,16 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             }}
                             placeholder="00.000.000/0000-00"
                         />
+                        {errors.cnpj && (
+                            <span style={{
+                                color: '#ff4444',
+                                fontSize: 12,
+                                marginTop: 4,
+                                display: 'block'
+                            }}>
+                                {errors.cnpj}
+                            </span>
+                        )}
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
@@ -195,7 +348,7 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             style={{
                                 width: '100%',
                                 padding: 12,
-                                border: '1px solid #ddd',
+                                border: `1px solid ${errors.address ? '#ff4444' : '#ddd'}`,
                                 borderRadius: 4,
                                 fontSize: 14,
                                 boxSizing: 'border-box',
@@ -203,6 +356,16 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             }}
                             placeholder="Digite o endereço completo"
                         />
+                        {errors.address && (
+                            <span style={{
+                                color: '#ff4444',
+                                fontSize: 12,
+                                marginTop: 4,
+                                display: 'block'
+                            }}>
+                                {errors.address}
+                            </span>
+                        )}
                     </div>
 
                     <div style={{ marginBottom: 24 }}>
@@ -226,7 +389,7 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             style={{
                                 width: '100%',
                                 padding: 12,
-                                border: '1px solid #ddd',
+                                border: `1px solid ${errors.units ? '#ff4444' : '#ddd'}`,
                                 borderRadius: 4,
                                 fontSize: 14,
                                 boxSizing: 'border-box',
@@ -234,6 +397,16 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             }}
                             placeholder="Número de unidades"
                         />
+                        {errors.units && (
+                            <span style={{
+                                color: '#ff4444',
+                                fontSize: 12,
+                                marginTop: 4,
+                                display: 'block'
+                            }}>
+                                {errors.units}
+                            </span>
+                        )}
                     </div>
 
                     <div style={{
@@ -261,14 +434,14 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || Object.values(errors).some(error => error !== '')}
                             style={{
                                 padding: '10px 20px',
                                 border: 'none',
                                 borderRadius: 4,
-                                background: loading ? '#ccc' : '#2196f3',
+                                background: (loading || Object.values(errors).some(error => error !== '')) ? '#ccc' : '#2196f3',
                                 color: 'white',
-                                cursor: loading ? 'not-allowed' : 'pointer',
+                                cursor: (loading || Object.values(errors).some(error => error !== '')) ? 'not-allowed' : 'pointer',
                                 fontSize: 14,
                                 fontWeight: 'bold',
                             }}
