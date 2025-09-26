@@ -88,7 +88,8 @@ export class WorkspaceController {
       name: formData.name,
       cnpj: formData.cnpj,
       address: formData.address,
-      units: formData.units
+      units: formData.units,
+      phone: formData.phone
       // pendingMaintenanceAmount and overdueMaintenanceAmount are calculated automatically
     };
     

@@ -10,6 +10,7 @@ interface Condominium {
     name: string;
     address: string;
     cnpj: string;
+    phone?: string;
     units: number;
     pendingMaintenanceAmount: number;
     overdueMaintenanceAmount: number;
@@ -22,6 +23,7 @@ export default function ComdominiumsPage() {
     const [condominiums, setCondominiums] = React.useState<Condominium[]>([]);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
+    const [isLoadingData, setIsLoadingData] = React.useState(true);
     const [deletingCondominiumId, setDeletingCondominiumId] = React.useState<number | null>(null);
 
     const handleCondominiumClick = (condominiumId: number) => {
@@ -33,7 +35,7 @@ export default function ComdominiumsPage() {
         }
     };
 
-    const handleAddCondominium = async (formData: {name: string, cnpj: string, address: string, units: number}) => {
+    const handleAddCondominium = async (formData: {name: string, cnpj: string, address: string, units: number, phone?: string}) => {
         // Verificar se já existe um condomínio com o mesmo nome
         const existingCondominium = condominiums.find(
             condominium => condominium.name.toLowerCase() === formData.name.toLowerCase()
@@ -54,6 +56,7 @@ export default function ComdominiumsPage() {
             cnpj: formData.cnpj,
             address: formData.address,
             units: formData.units,
+            phone: formData.phone,
             workspaceId: parseInt(workspaceId || '0')
         };
 
@@ -74,8 +77,15 @@ export default function ComdominiumsPage() {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                const updatedData = await updatedResponse.json();
-                setCondominiums(updatedData);
+                
+                if (updatedResponse.ok) {
+                    const updatedData = await updatedResponse.json();
+                    // Garantir que updatedData é um array
+                    setCondominiums(Array.isArray(updatedData) ? updatedData : []);
+                } else {
+                    console.error('Erro ao buscar condomínios atualizados:', updatedResponse.statusText);
+                    // Manter o estado atual se falhar ao buscar
+                }
                 
                 setIsModalOpen(false);
                 alert('Condomínio adicionado com sucesso!');
@@ -135,17 +145,31 @@ export default function ComdominiumsPage() {
 
     React.useEffect(() => {
         const fetchData = async () => {
+            try {
+                setIsLoadingData(true);
+                const workspaceId = localStorage.getItem('workspaceId');
+                const token = localStorage.getItem('token');
 
-            const workspaceId = localStorage.getItem('workspaceId');
-            const token = localStorage.getItem('token');
-
-            const response = await fetch(`${baseUrl}/workspaces/${workspaceId}/condominiums`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
+                const response = await fetch(`${baseUrl}/workspaces/${workspaceId}/condominiums`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Garantir que data é um array
+                    setCondominiums(Array.isArray(data) ? data : []);
+                } else {
+                    console.error('Erro ao buscar condomínios:', response.statusText);
+                    setCondominiums([]);
                 }
-            });
-            const data = await response.json();
-            setCondominiums(data);
+            } catch (error) {
+                console.error('Erro ao buscar condomínios:', error);
+                setCondominiums([]);
+            } finally {
+                setIsLoadingData(false);
+            }
         };
         fetchData();
     }, [baseUrl]);
@@ -174,7 +198,8 @@ export default function ComdominiumsPage() {
                 </button>
             </div>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "space-around" }}>
-                {condominiums.map((condo, index) => (
+                {Array.isArray(condominiums) && condominiums.length > 0 ? (
+                    condominiums.map((condo, index) => (
                     <div
                         key={condo.id || `condo-${index}`}
                         onClick={() => handleCondominiumClick(condo.id)}
@@ -255,6 +280,9 @@ export default function ComdominiumsPage() {
                             <p style={{ margin: 0, color: "#666", fontSize: 14 }}>
                                 <strong>Unidades:</strong> {condo.units}
                             </p>
+                            <p style={{ margin: 0, color: "#666", fontSize: 14 }}>
+                                <strong>Telefone:</strong> {condo.phone || '-'}
+                            </p>
                             <p style={{ 
                                 margin: 0,
                                 padding: "4px 8px", 
@@ -270,7 +298,17 @@ export default function ComdominiumsPage() {
                         </div>
                     </div>
                 </div>
-            ))}
+            ))
+                ) : (
+                    <div style={{ 
+                        width: '100%', 
+                        textAlign: 'center', 
+                        padding: '40px 0',
+                        color: '#666'
+                    }}>
+                        {isLoadingData ? 'Carregando condomínios...' : 'Nenhum condomínio encontrado.'}
+                    </div>
+                )}
             </div>
 
             <AddCondominiumModal

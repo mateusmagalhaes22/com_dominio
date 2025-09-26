@@ -7,6 +7,7 @@ interface CondominiumFormData {
     cnpj: string;
     address: string;
     units: number;
+    phone?: string;
 }
 
 interface AddCondominiumModalProps {
@@ -30,21 +31,21 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
         name: '',
         cnpj: '',
         address: '',
-        units: 0
+        units: 0,
+        phone: ''
     });
 
     const [errors, setErrors] = React.useState({
         name: '',
         cnpj: '',
         address: '',
-        units: ''
+        units: '',
+        phone: ''
     });
 
     const formatCNPJ = (value: string) => {
-        // Remove todos os caracteres não numéricos
         const cleanValue = value.replace(/\D/g, '');
         
-        // Aplica a máscara: XX.XXX.XXX/XXXX-XX
         if (cleanValue.length <= 2) {
             return cleanValue;
         } else if (cleanValue.length <= 5) {
@@ -58,6 +59,18 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
         }
     };
 
+    const formatPhone = (value: string) => {
+        const cleanValue = value.replace(/\D/g, '');
+        
+        if (cleanValue.length <= 2) {
+            return cleanValue;
+        } else if (cleanValue.length <= 7) {
+            return cleanValue.replace(/(\d{2})(\d+)/, '($1) $2');
+        } else {
+            return cleanValue.replace(/(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+        }
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         
@@ -67,6 +80,12 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
             setFormData(prev => ({
                 ...prev,
                 [name]: formattedCNPJ
+            }));
+        } else if (name === 'phone') {
+            const formattedPhone = formatPhone(value);
+            setFormData(prev => ({
+                ...prev,
+                [name]: formattedPhone
             }));
         } else if (name === 'units') {
             const unitsValue = parseInt(value) || 0;
@@ -81,7 +100,6 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
             }));
         }
 
-        // Limpar erro quando usuário começa a digitar
         if (errors[name as keyof typeof errors]) {
             setErrors(prev => ({
                 ...prev,
@@ -89,7 +107,6 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
             }));
         }
 
-        // Validação em tempo real para nome duplicado
         if (name === 'name' && value.trim()) {
             const duplicateName = existingCondominiums.find(
                 condominium => condominium.name.toLowerCase() === value.trim().toLowerCase()
@@ -108,7 +125,8 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
             name: '',
             cnpj: '',
             address: '',
-            units: ''
+            units: '',
+            phone: ''
         };
 
         if (!formData.name.trim()) {
@@ -125,7 +143,6 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
         if (!formData.cnpj.trim()) {
             newErrors.cnpj = 'CNPJ é obrigatório';
         } else {
-            // Verificar se o CNPJ tem 14 dígitos (removendo formatação)
             const cnpjNumbers = formData.cnpj.replace(/\D/g, '');
             if (cnpjNumbers.length !== 14) {
                 newErrors.cnpj = 'CNPJ deve ter 14 dígitos';
@@ -157,13 +174,15 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                 name: '',
                 cnpj: '',
                 address: '',
-                units: 0
+                units: 0,
+                phone: ''
             });
             setErrors({
                 name: '',
                 cnpj: '',
                 address: '',
-                units: ''
+                units: '',
+                phone: ''
             });
         } catch (error) {
             console.error('Erro ao adicionar condomínio:', error);
@@ -175,13 +194,15 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
             name: '',
             cnpj: '',
             address: '',
-            units: 0
+            units: 0,
+            phone: ''
         });
         setErrors({
             name: '',
             cnpj: '',
             address: '',
-            units: ''
+            units: '',
+            phone: ''
         });
         onClose();
     };
@@ -304,7 +325,7 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                             onChange={handleInputChange}
                             required
                             disabled={loading}
-                            maxLength={18} // XX.XXX.XXX/XXXX-XX = 18 caracteres
+                            maxLength={18}
                             style={{
                                 width: '100%',
                                 padding: 12,
@@ -364,6 +385,46 @@ export default function AddCondominiumModal({ isOpen, onClose, onSubmit, loading
                                 display: 'block'
                             }}>
                                 {errors.address}
+                            </span>
+                        )}
+                    </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: 4,
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: '#333',
+                        }}>
+                            Telefone da Portaria
+                        </label>
+                        <input
+                            type="text"
+                            name="phone"
+                            value={formData.phone || ''}
+                            onChange={handleInputChange}
+                            disabled={loading}
+                            maxLength={15} // (XX) XXXXX-XXXX = 15 caracteres
+                            style={{
+                                width: '100%',
+                                padding: 12,
+                                border: `1px solid ${errors.phone ? '#ff4444' : '#ddd'}`,
+                                borderRadius: 4,
+                                fontSize: 14,
+                                boxSizing: 'border-box',
+                                color: '#333',
+                            }}
+                            placeholder="(00) 00000-0000"
+                        />
+                        {errors.phone && (
+                            <span style={{
+                                color: '#ff4444',
+                                fontSize: 12,
+                                marginTop: 4,
+                                display: 'block'
+                            }}>
+                                {errors.phone}
                             </span>
                         )}
                     </div>

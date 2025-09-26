@@ -21,6 +21,9 @@ export class Condominium {
   @Column()
   units: number;
 
+  @Column({ nullable: true })
+  phone?: String;
+
   @OneToMany(() => Maintenance, (maintenance) => maintenance.condominium)
   maintenances: Maintenance[];
 
@@ -39,6 +42,7 @@ export class Condominium {
       name: this.name as string,
       cnpj: this.cnpj as string,
       address: this.address as string,
+      phone: this.phone as string,
       workspaceId: this.workspace?.id || 0,
       units: this.units || 0,
       pendingMaintenanceAmount: pendingMaintenances.length,

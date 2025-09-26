@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class CondominiumDto {
     
@@ -21,4 +21,8 @@ export class CondominiumDto {
   @IsNumber()
   @IsNotEmpty()
   units: number;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
 }

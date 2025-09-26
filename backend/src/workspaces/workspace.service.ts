@@ -151,7 +151,7 @@ export class WorkspaceService {
     return this.condominiumRepository.save(condominium);
   }
 
-  updateCondominium(id: number, condominiumId: number, data: { name: string; cnpj: string; address: string; }) {
+  updateCondominium(id: number, condominiumId: number, data: { name: string; cnpj: string; address: string; phone?: string; units?: number; }) {
     // Check if there are any properties to update
     const updateData = { ...data };
     if (Object.keys(updateData).length === 0) {
