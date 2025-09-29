@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { LoginModule } from './login/login.module';
 import { IdempotencyModule } from './idempotency/idempotency.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { IdempotencyModule } from './idempotency/idempotency.module';
     WorkspacesModule,
     LoginModule,
     IdempotencyModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

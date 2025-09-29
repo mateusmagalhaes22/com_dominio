@@ -18,6 +18,9 @@ interface Maintenance {
     description: string;
     status: string;
     endDate: string;
+    isRecurring?: boolean;
+    recurringPeriod?: string;
+    nextRecurrenceDate?: string;
 }
 
 interface Condominium {
@@ -246,6 +249,19 @@ export default function MaintenancesPage() {
         return new Date(dateString).toLocaleDateString('pt-BR');
     };
 
+    const formatRecurringPeriod = (period: string) => {
+        switch (period) {
+            case '1_month':
+                return '1 mês';
+            case '6_months':
+                return '6 meses';
+            case '1_year':
+                return '1 ano';
+            default:
+                return period;
+        }
+    };
+
     if (loading) {
         return (
             <div className="maintenances-loading">
@@ -286,7 +302,6 @@ export default function MaintenancesPage() {
                 </button>
             </div>
 
-            {/* Lista de manutenções */}
             {maintenances.length === 0 ? (
                 <div className="maintenances-empty">
                     <p className="maintenances-empty-text">
@@ -357,7 +372,20 @@ export default function MaintenancesPage() {
                                     {maintenance.status}
                                 </span>
                             </div>
-                            
+                            <div className="maintenance-recurring-section">
+                                {maintenance.isRecurring && (
+                                    <>
+                                        <span className="maintenance-date-item maintenance-recurring">
+                                            <strong>Recorrência:</strong> {formatRecurringPeriod(maintenance.recurringPeriod || '')}
+                                        </span>
+                                        {maintenance.nextRecurrenceDate && (
+                                            <span className="maintenance-date-item maintenance-next-recurrence">
+                                                <strong>Próxima manutenção será criada em:</strong> {formatDate(maintenance.nextRecurrenceDate)}
+                                            </span>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                             <div className="maintenance-description">
                                 {maintenance.description}
                             </div>

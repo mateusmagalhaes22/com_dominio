@@ -10,6 +10,9 @@ interface Maintenance {
     endDate?: string;
     createdAt?: string;
     updatedAt?: string;
+    isRecurring?: boolean;
+    recurringPeriod?: string;
+    nextRecurrenceDate?: string;
 }
 
 interface MaintenanceFormData {
@@ -17,6 +20,8 @@ interface MaintenanceFormData {
     description: string;
     endDate: string;
     status: string;
+    isRecurring: boolean;
+    recurringPeriod: string;
 }
 
 interface AddMaintenanceModalProps {
@@ -38,13 +43,13 @@ export default function AddMaintenanceModal({
         name: '',
         description: '',
         endDate: '',
-        status: 'pendente'
+        status: 'pendente',
+        isRecurring: false,
+        recurringPeriod: ''
     });
 
     const [errors, setErrors] = React.useState({
-        name: '',
-        description: '',
-        endDate: ''
+        name: ''
     });
 
     const validateName = (name: string): string => {
@@ -66,45 +71,16 @@ export default function AddMaintenanceModal({
         return '';
     };
 
-    const validateDescription = (description: string): string => {
-        if (!description.trim()) {
-            return 'Descrição é obrigatória';
-        }
-        if (description.trim().length < 10) {
-            return 'Descrição deve ter pelo menos 10 caracteres';
-        }
-        return '';
-    };
-
-    const validateEndDate = (endDate: string): string => {
-        if (!endDate) {
-            return 'Data de prazo é obrigatória';
-        }
-        
-        const selectedDate = new Date(endDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        if (selectedDate < today) {
-            return 'Data de prazo não pode ser no passado';
-        }
-        
-        return '';
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         const nameError = validateName(formData.name);
-        const descriptionError = validateDescription(formData.description);
 
         setErrors({
-            name: nameError,
-            description: descriptionError,
-            endDate: ''
+            name: nameError
         });
 
-        if (nameError || descriptionError) {
+        if (nameError) {
             return;
         }
 
@@ -127,12 +103,12 @@ export default function AddMaintenanceModal({
             name: '',
             description: '',
             endDate: '',
-            status: 'pendente'
+            status: 'pendente',
+            isRecurring: false,
+            recurringPeriod: ''
         });
         setErrors({
-            name: '',
-            description: '',
-            endDate: ''
+            name: ''
         });
         onClose();
     };
@@ -250,7 +226,6 @@ export default function AddMaintenanceModal({
                         <textarea
                             value={formData.description}
                             onChange={(e) => setFormData({...formData, description: e.target.value})}
-                            required
                             disabled={isLoading}
                             rows={4}
                             style={{
@@ -266,19 +241,9 @@ export default function AddMaintenanceModal({
                                 color: '#333'
                             }}
                         />
-                        {errors.description && (
-                            <span style={{
-                                display: 'block',
-                                color: '#f44336',
-                                fontSize: 12,
-                                marginTop: 4
-                            }}>
-                                {errors.description}
-                            </span>
-                        )}
                     </div>
 
-                    <div style={{ marginBottom: 24 }}>
+                    <div style={{ marginBottom: 16 }}>
                         <label style={{
                             display: 'block',
                             marginBottom: 4,
@@ -306,6 +271,69 @@ export default function AddMaintenanceModal({
                             }}
                         />
                     </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: '#333',
+                            cursor: 'pointer'
+                        }}>
+                            <input
+                                type="checkbox"
+                                checked={formData.isRecurring}
+                                onChange={(e) => setFormData({
+                                    ...formData, 
+                                    isRecurring: e.target.checked,
+                                    recurringPeriod: e.target.checked ? formData.recurringPeriod : ''
+                                })}
+                                disabled={isLoading}
+                                style={{
+                                    marginRight: 8,
+                                    cursor: 'pointer'
+                                }}
+                            />
+                            Manutenção recorrente
+                        </label>
+                    </div>
+
+                    {formData.isRecurring && (
+                        <div style={{ marginBottom: 24 }}>
+                            <label style={{
+                                display: 'block',
+                                marginBottom: 4,
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                color: '#333',
+                            }}>
+                                Período de Recorrência
+                            </label>
+                            <select
+                                value={formData.recurringPeriod}
+                                onChange={(e) => setFormData({...formData, recurringPeriod: e.target.value})}
+                                required={formData.isRecurring}
+                                disabled={isLoading}
+                                style={{
+                                    width: '100%',
+                                    padding: '8px 12px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: 4,
+                                    fontSize: 14,
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                    color: '#333',
+                                    backgroundColor: 'white'
+                                }}
+                            >
+                                <option value="">Selecione o período</option>
+                                <option value="1_month">1 mês</option>
+                                <option value="6_months">6 meses</option>
+                                <option value="1_year">1 ano</option>
+                            </select>
+                        </div>
+                    )}
 
                     <div style={{
                         display: 'flex',

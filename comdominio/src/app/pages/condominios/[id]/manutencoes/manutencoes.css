@@ -304,3 +304,26 @@
     font-weight: 700;
     color: white;
 }
+
+/* Recurring maintenance styles */
+.maintenance-recurring {
+    color: #2196f3 !important;
+    font-weight: 600;
+}
+
+.maintenance-next-recurrence {
+    color: #ff9800 !important;
+    font-weight: 600;
+    background-color: #fff3e0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    border-left: 3px solid #ff9800;
+    margin-left: 5%;
+}
+
+.maintenance-recurring-section {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #2196f3;
+    font-weight: 600;
+}

@@ -7,6 +7,7 @@ import { Condominium } from 'src/workspaces/condominium/condominium.entity';
 import { CondominiumDto } from 'src/workspaces/condominium/condominium-dto';
 import { Maintenance } from './condominium/maintenances/maintenance.entity';
 import { MaintenanceStatus } from './condominium/maintenances/maintenance-status.enum';
+import { RecurringPeriod } from './condominium/maintenances/recurring-period.enum';
 
 @Injectable()
 export class WorkspaceService {
@@ -188,6 +189,14 @@ export class WorkspaceService {
       }
     }
 
+    // Handle recurring fields properly
+    if (!processedData.isRecurring) {
+      processedData.recurringPeriod = undefined;
+      processedData.nextRecurrenceDate = undefined;
+    } else if ((processedData.recurringPeriod as any) === '') {
+      processedData.recurringPeriod = undefined;
+    }
+
     const maintenance = this.maintenanceRepository.create({
       ...processedData,
       condominium,
@@ -293,6 +302,65 @@ export class WorkspaceService {
     for (const maintenance of overdueMaintances) {
       maintenance.status = MaintenanceStatus.ATRASADO;
       await this.maintenanceRepository.save(maintenance);
+    }
+  }
+
+  async createRecurringMaintenance(originalMaintenance: Maintenance): Promise<Maintenance> {
+    if (!originalMaintenance.isRecurring || !originalMaintenance.recurringPeriod || !originalMaintenance.endDate) {
+      throw new Error('Maintenance is not configured for recurrence');
+    }
+
+    const nextEndDate = new Date(originalMaintenance.endDate);
+    
+    // Calculate the next maintenance date based on period
+    switch (originalMaintenance.recurringPeriod) {
+      case RecurringPeriod.ONE_MONTH:
+        nextEndDate.setMonth(nextEndDate.getMonth() + 1);
+        break;
+      case RecurringPeriod.SIX_MONTHS:
+        nextEndDate.setMonth(nextEndDate.getMonth() + 6);
+        break;
+      case RecurringPeriod.ONE_YEAR:
+        nextEndDate.setFullYear(nextEndDate.getFullYear() + 1);
+        break;
+    }
+
+    const newMaintenance = this.maintenanceRepository.create({
+      name: originalMaintenance.name,
+      description: originalMaintenance.description,
+      endDate: nextEndDate,
+      isRecurring: originalMaintenance.isRecurring,
+      recurringPeriod: originalMaintenance.recurringPeriod,
+      parentMaintenanceId: originalMaintenance.id,
+      condominium: originalMaintenance.condominium,
+      status: MaintenanceStatus.PENDENTE
+    });
+
+    return this.maintenanceRepository.save(newMaintenance);
+  }
+
+  async checkAndCreateRecurringMaintenances(): Promise<void> {
+    const currentDate = new Date();
+    
+    // Find all recurring maintenances that should create next occurrence
+    const recurringMaintenances = await this.maintenanceRepository.find({
+      where: {
+        isRecurring: true,
+        nextRecurrenceDate: LessThan(currentDate)
+      },
+      relations: ['condominium']
+    });
+
+    for (const maintenance of recurringMaintenances) {
+      try {
+        await this.createRecurringMaintenance(maintenance);
+        
+        // Update the next recurrence date
+        maintenance.calculateNextRecurrenceDate();
+        await this.maintenanceRepository.save(maintenance);
+      } catch (error) {
+        console.error(`Error creating recurring maintenance for ID ${maintenance.id}:`, error);
+      }
     }
   }
 }
