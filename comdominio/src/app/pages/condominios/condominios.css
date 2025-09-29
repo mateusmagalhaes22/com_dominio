@@ -70,13 +70,12 @@
 
 .condominio-delete-button {
     position: absolute;
-    top: 8px;
     right: 8px;
-    background-color: #ff4444;
+    background-color: #c52222;
     color: white;
     border: none;
-    border-radius: 50%;
-    width: 28px;
+    border-radius: 7px;
+    width: 85px;
     height: 28px;
     cursor: pointer;
     display: flex;

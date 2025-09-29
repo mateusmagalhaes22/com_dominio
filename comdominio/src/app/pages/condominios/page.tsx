@@ -207,7 +207,7 @@ export default function ComdominiumsPage() {
                                     className="condominio-delete-button"
                                     title={deletingCondominiumId === condo.id ? "Removendo..." : "Remover condomínio"}
                                 >
-                                    {deletingCondominiumId === condo.id ? "..." : <CloseIcon style={{ fontSize: 16 }} />}
+                                    {deletingCondominiumId === condo.id ? "..." : <><CloseIcon style={{ fontSize: 16 }} /> Remover</>}
                                 </button>
                                 
                                 <h2 className="condominio-name">
