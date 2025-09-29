@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import StatCard from '../../../components/StatCard';
 import BusinessIcon from '@mui/icons-material/Business';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import BuildIcon from '@mui/icons-material/Build';
 import DescriptionIcon from '@mui/icons-material/Description';
 import './home.css';
 
 export default function HomePage() {
+  const router = useRouter();
 
   const [dashboardData, setDashboardData] = useState({
     totalCondominios: 0,
@@ -19,6 +19,10 @@ export default function HomePage() {
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+  const handleAddCondominiumClick = () => {
+    router.push('/pages/condominios?openModal=true');
+  };
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -124,16 +128,13 @@ export default function HomePage() {
         <div className="home-card">
           <h3 className="home-card-title">Ações Rápidas</h3>
           <div className="home-actions-list">
-            <button className="home-action-button">
+            <button 
+              className="home-action-button"
+              onClick={handleAddCondominiumClick}
+            >
               <div className="home-action-content">
-                <PersonAddIcon className="home-action-icon blue" />
-                <span className="home-action-text">Adicionar Novo Morador</span>
-              </div>
-            </button>
-            <button className="home-action-button">
-              <div className="home-action-content">
-                <BuildIcon className="home-action-icon green" />
-                <span className="home-action-text">Criar Nova Manutenção</span>
+                <BusinessIcon className="home-action-icon green" />
+                <span className="home-action-text">Adicionar Novo Condomínio</span>
               </div>
             </button>
             <button className="home-action-button">
