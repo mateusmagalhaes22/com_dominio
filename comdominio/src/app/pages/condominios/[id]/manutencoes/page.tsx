@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter, useParams } from 'next/navigation';
 import AddMaintenanceModal from '../../../../../components/AddMaintenanceModal';
+import MaintenanceModal from '../../../../../components/MaintenanceModal';
 import { generateIdempotencyKeySync } from '../../../../../utils/idempotency';
 import CheckIcon from '@mui/icons-material/Check';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -43,6 +44,9 @@ export default function MaintenancesPage() {
     const [isAddingMaintenance, setIsAddingMaintenance] = React.useState(false);
     const [deletingMaintenanceId, setDeletingMaintenanceId] = React.useState<number | null>(null);
     const [completingMaintenanceId, setCompletingMaintenanceId] = React.useState<number | null>(null);
+    const [selectedMaintenance, setSelectedMaintenance] = React.useState<Maintenance | null>(null);
+    const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = React.useState(false);
+    const [isUpdatingMaintenance, setIsUpdatingMaintenance] = React.useState(false);
 
     React.useEffect(() => {
         const fetchData = async () => {
@@ -94,6 +98,8 @@ export default function MaintenancesPage() {
         description: string;
         status: string;
         endDate: string;
+        isRecurring: boolean;
+        recurringPeriod: string;
     }) => {
         // Verificar se já existe uma manutenção com o mesmo nome
         const existingMaintenance = maintenances.find(
@@ -111,6 +117,20 @@ export default function MaintenancesPage() {
         const token = localStorage.getItem('token');
 
         try {
+            // Preparar dados, removendo recurringPeriod se isRecurring for false
+            const dataToSend: any = {
+                name: formData.name,
+                description: formData.description,
+                status: formData.status,
+                endDate: formData.endDate,
+                isRecurring: formData.isRecurring
+            };
+
+            // Só adicionar recurringPeriod se for recorrente e tiver valor
+            if (formData.isRecurring && formData.recurringPeriod) {
+                dataToSend.recurringPeriod = formData.recurringPeriod;
+            }
+
             const response = await fetch(`${baseUrl}/workspaces/${workspaceId}/condominiums/${condominiumId}/maintenances`, {
                 method: 'POST',
                 headers: {
@@ -118,7 +138,7 @@ export default function MaintenancesPage() {
                     'Content-Type': 'application/json',
                     'Idempotency-Key': generateIdempotencyKeySync(formData.name, formData.endDate)
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(dataToSend)
             });
 
             if (response.ok) {
@@ -232,6 +252,105 @@ export default function MaintenancesPage() {
         }
     };
 
+    const handleUpdateMaintenance = async (maintenanceId: number, formData: {
+        name: string;
+        description: string;
+        status: string;
+        endDate: string;
+        isRecurring: boolean;
+        recurringPeriod: string;
+    }) => {
+        setIsUpdatingMaintenance(true);
+        
+        const workspaceId = localStorage.getItem('workspaceId');
+        const token = localStorage.getItem('token');
+
+        try {
+            // Preparar dados, removendo recurringPeriod se isRecurring for false
+            const dataToSend: any = {
+                name: formData.name,
+                description: formData.description,
+                status: formData.status,
+                endDate: formData.endDate,
+                isRecurring: formData.isRecurring
+            };
+
+            // Só adicionar recurringPeriod se for recorrente e tiver valor
+            if (formData.isRecurring && formData.recurringPeriod) {
+                dataToSend.recurringPeriod = formData.recurringPeriod;
+            }
+
+            console.log('Dados sendo enviados para atualização:', dataToSend);
+
+            const response = await fetch(
+                `${baseUrl}/workspaces/${workspaceId}/condominiums/${condominiumId}/maintenances/${maintenanceId}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToSend)
+                }
+            );
+
+            if (response.ok) {
+                const updatedMaintenance = await response.json();
+                
+                // Atualizar a lista local
+                setMaintenances(prevMaintenances => 
+                    prevMaintenances.map(m => 
+                        m.id === maintenanceId 
+                            ? { ...m, ...updatedMaintenance }
+                            : m
+                    )
+                );
+
+                // Atualizar a manutenção selecionada se for a mesma
+                if (selectedMaintenance && selectedMaintenance.id === maintenanceId) {
+                    setSelectedMaintenance({ ...selectedMaintenance, ...updatedMaintenance });
+                }
+            } else {
+                let errorMessage = `${response.status} - ${response.statusText}`;
+                try {
+                    const errorText = await response.text();
+                    console.error('Erro ao atualizar manutenção:', response.status, response.statusText, errorText);
+                    
+                    // Tentar parsear como JSON para mais detalhes
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.message) {
+                            errorMessage += `\nDetalhes: ${errorJson.message}`;
+                        }
+                    } catch (parseError) {
+                        if (errorText) {
+                            errorMessage += `\nDetalhes: ${errorText}`;
+                        }
+                    }
+                } catch (readError) {
+                    console.error('Erro ao ler resposta de erro:', readError);
+                }
+                
+                alert(`Erro ao atualizar manutenção: ${errorMessage}`);
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar manutenção:', error);
+            alert('Erro ao atualizar manutenção');
+        } finally {
+            setIsUpdatingMaintenance(false);
+        }
+    };
+
+    const handleOpenMaintenanceModal = (maintenance: Maintenance) => {
+        setSelectedMaintenance(maintenance);
+        setIsMaintenanceModalOpen(true);
+    };
+
+    const handleCloseMaintenanceModal = () => {
+        setSelectedMaintenance(null);
+        setIsMaintenanceModalOpen(false);
+    };
+
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
             case 'pendente':
@@ -311,7 +430,12 @@ export default function MaintenancesPage() {
             ) : (
                 <div className="maintenances-list">
                     {maintenances.map((maintenance) => (
-                        <div key={maintenance.id} className="maintenance-card">
+                        <div 
+                            key={maintenance.id} 
+                            className="maintenance-card"
+                            onClick={() => handleOpenMaintenanceModal(maintenance)}
+                            style={{ cursor: 'pointer' }}
+                        >
                             <div className="maintenance-content">
                                 <div className="maintenance-info-section">
                                     <h3 className="maintenance-title">
@@ -331,7 +455,10 @@ export default function MaintenancesPage() {
                                 <div className="maintenance-actions">
                                     {maintenance.status !== 'feito' && (
                                         <button
-                                            onClick={() => handleCompleteMaintenance(maintenance.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCompleteMaintenance(maintenance.id);
+                                            }}
                                             disabled={completingMaintenanceId === maintenance.id}
                                             className={`maintenance-action-btn maintenance-complete-btn ${
                                                 completingMaintenanceId === maintenance.id ? 'disabled' : ''
@@ -349,7 +476,10 @@ export default function MaintenancesPage() {
                                     )}
 
                                     <button
-                                        onClick={() => handleDeleteMaintenance(maintenance.id)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteMaintenance(maintenance.id);
+                                        }}
                                         disabled={deletingMaintenanceId === maintenance.id}
                                         className={`maintenance-action-btn maintenance-delete-btn ${
                                             deletingMaintenanceId === maintenance.id ? 'disabled' : ''
@@ -399,6 +529,15 @@ export default function MaintenancesPage() {
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleAddMaintenance}
                 isLoading={isAddingMaintenance}
+                existingMaintenances={maintenances}
+            />
+            
+            <MaintenanceModal
+                isOpen={isMaintenanceModalOpen}
+                onClose={handleCloseMaintenanceModal}
+                maintenance={selectedMaintenance}
+                onUpdate={handleUpdateMaintenance}
+                isLoading={isUpdatingMaintenance}
                 existingMaintenances={maintenances}
             />
         </div>

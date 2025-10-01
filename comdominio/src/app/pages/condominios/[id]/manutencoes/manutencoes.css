@@ -80,6 +80,13 @@
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease-in-out;
+}
+
+.maintenance-card:hover {
+    border-color: #2196f3;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+    transform: translateY(-1px);
 }
 
 .maintenance-header {
@@ -305,7 +312,6 @@
     color: white;
 }
 
-/* Recurring maintenance styles */
 .maintenance-recurring {
     color: #2196f3 !important;
     font-weight: 600;
