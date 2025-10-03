@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import StatCard from '../../../components/StatCard';
+import ReportModal from '../../../components/ReportModal';
 import BusinessIcon from '@mui/icons-material/Business';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -18,10 +19,16 @@ export default function HomePage() {
     manutencoesAtrasadas: 0
   });
 
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   const handleAddCondominiumClick = () => {
     router.push('/pages/condominios?openModal=true');
+  };
+
+  const handleGenerateReportClick = () => {
+    setIsReportModalOpen(true);
   };
 
   useEffect(() => {
@@ -137,7 +144,10 @@ export default function HomePage() {
                 <span className="home-action-text">Adicionar Novo Condomínio</span>
               </div>
             </button>
-            <button className="home-action-button">
+            <button 
+              className="home-action-button"
+              onClick={handleGenerateReportClick}
+            >
               <div className="home-action-content">
                 <DescriptionIcon className="home-action-icon purple" />
                 <span className="home-action-text">Gerar Relatório Mensal</span>
@@ -179,6 +189,11 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      <ReportModal 
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 }
