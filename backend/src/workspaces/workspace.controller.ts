@@ -3,11 +3,11 @@ import { WorkspaceService } from './workspace.service';
 import { WorkspaceDto } from './workspace.dto';
 import { JwtAuthGuard } from 'src/login/jwt-auth.guard';
 import { WorkspaceAccessGuard } from 'src/login/workspace-access.guard';
-import { WorkspaceIdAccessGuard } from 'src/login/workspace-id-access.guard';
 import { CurrentUser, type AuthUser } from 'src/login/current-user.decorator';
 import { CondominiumDto } from 'src/workspaces/condominium/condominium-dto';
 import { MaintenanceDto } from './condominium/maintenances/maintenance-dto';
 import { IdempotencyInterceptor } from 'src/idempotency/idempotency.interceptor';
+import { ActivityType } from './activity-log/activity-log.entity';
 
 @Controller('workspaces')
 export class WorkspaceController {
@@ -81,8 +81,7 @@ export class WorkspaceController {
   @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Post(':id/condominiums')
   @UseInterceptors(IdempotencyInterceptor)
-  createCondominium(@Param('id') id: number, @Body() body: any) {
-    // Extract data from the correct structure
+  async createCondominium(@Param('id') id: number, @Body() body: any, @CurrentUser() user: AuthUser) {
     const formData = body.formData || body;
     const condominiumData = {
       name: formData.name,
@@ -90,10 +89,20 @@ export class WorkspaceController {
       address: formData.address,
       units: formData.units,
       phone: formData.phone
-      // pendingMaintenanceAmount and overdueMaintenanceAmount are calculated automatically
     };
     
-    return this.workspaceService.createCondominium(id, condominiumData);
+    const condominium = await this.workspaceService.createCondominium(id, condominiumData);
+    
+    await this.workspaceService.createActivityLog(
+      id,
+      user.userId,
+      ActivityType.CONDOMINIUM_CREATED,
+      'Condomínio adicionado:',
+      condominiumData.name,
+      condominium.id
+    );
+    
+    return condominium;
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
@@ -109,27 +118,49 @@ export class WorkspaceController {
 
   @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Delete(':id/condominiums/:condominiumId')
-  deleteCondominium(
-    @Param('id', ParseIntPipe) id: number,
+  async deleteCondominium(
+    @Param('id', ParseIntPipe) workspaceId: number,
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
+    @CurrentUser() user: AuthUser
   ) {
-    return this.workspaceService.removeCondominium(id, condominiumId);
+
+    const condominium = await this.workspaceService.findCondominiumsByWorkspaceIdAndCondominiumId(workspaceId, condominiumId);
+    
+    const result = await this.workspaceService.removeCondominium(workspaceId, condominiumId);
+    
+    if (condominium) {
+      await this.workspaceService.createActivityLog(
+        workspaceId,
+        user.userId,
+        ActivityType.CONDOMINIUM_DELETED,
+        'Condomínio excluído:',
+        condominium.name,
+        condominiumId
+      );
+    }
+    
+    return result;
   }
 
-  @UseGuards(JwtAuthGuard, WorkspaceIdAccessGuard)
-  @Get(':workspaceId/condominiums/:condominiumId/maintenances')
-  findMaintenances(
-    @Param('workspaceId', ParseIntPipe) workspaceId: number,
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
+  @Get(':id/condominiums/:condominiumId/maintenances')
+  async findMaintenances(
+    @Param('id', ParseIntPipe) workspaceId: number,
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
     @Headers('Status') status?: string,
   ) {
-    return this.workspaceService.findMaintenances(workspaceId, condominiumId, status);
+    const maintenances = await this.workspaceService.findMaintenances(workspaceId, condominiumId, status);
+    
+    return maintenances.map(maintenance => ({
+      ...maintenance,
+      condominiumName: maintenance.condominium?.name || 'N/A'
+    }));
   }
 
-  @UseGuards(JwtAuthGuard, WorkspaceIdAccessGuard)
-  @Get(':workspaceId/condominiums/:condominiumId/maintenances/count')
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
+  @Get(':id/condominiums/:condominiumId/maintenances/count')
   findMaintenancesCount(
-    @Param('workspaceId', ParseIntPipe) workspaceId: number,
+    @Param('id', ParseIntPipe) workspaceId: number,
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
     @Headers('Status') status?: string,
   ) {
@@ -139,35 +170,120 @@ export class WorkspaceController {
   @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
   @Post(':id/condominiums/:condominiumId/maintenances')
   @UseInterceptors(IdempotencyInterceptor)
-  createMaintenance(
+  async createMaintenance(
+    @Param('id', ParseIntPipe) workspaceId: number,
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
-    @Body() dto: MaintenanceDto
+    @Body() dto: MaintenanceDto,
+    @CurrentUser() user: AuthUser
   ) {
-    return this.workspaceService.createMaintenance(condominiumId, dto);
+    const maintenance = await this.workspaceService.createMaintenance(condominiumId, dto);
+    
+    const maintenanceName = maintenance.name || dto.name || 'Manutenção';
+    const condominiumName = dto.condominiumName || maintenance.condominium?.name || 'Condomínio';
+    const entityName = `${maintenanceName} - ${condominiumName}`;
+    
+    await this.workspaceService.createActivityLog(
+      workspaceId,
+      user.userId,
+      ActivityType.MAINTENANCE_CREATED,
+      'Manutenção criada:',
+      entityName,
+      maintenance.id
+    );
+    
+    return maintenance;
   }
 
-  @UseGuards(JwtAuthGuard, WorkspaceIdAccessGuard)
-  @Put(':workspaceId/condominiums/:condominiumId/maintenances/:maintenanceId')
-  updateMaintenance(
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
+  @Put(':id/condominiums/:condominiumId/maintenances/:maintenanceId')
+  async updateMaintenance(
+    @Param('id', ParseIntPipe) workspaceId: number,
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
     @Param('maintenanceId', ParseIntPipe) maintenanceId: number,
     @Body() dto: MaintenanceDto,
+    @CurrentUser() user: AuthUser
   ) {
-    return this.workspaceService.updateMaintenance(condominiumId, maintenanceId, dto);
+    const maintenance = await this.workspaceService.updateMaintenance(condominiumId, maintenanceId, dto);
+    
+    if (dto.status === 'feito' as any && maintenance) {
+      const maintenanceName = maintenance.name || dto.name || 'Manutenção';
+      const condominiumName = dto.condominiumName || maintenance.condominium?.name || 'Condomínio';
+      const entityName = `${maintenanceName} - ${condominiumName}`;
+      await this.workspaceService.createActivityLog(
+        workspaceId,
+        user.userId,
+        ActivityType.MAINTENANCE_COMPLETED,
+        'Manutenção concluída:',
+        entityName,
+        maintenance.id
+      );
+    }
+    
+    if (maintenance && maintenance.condominium) {
+      return {
+        ...maintenance,
+        condominiumName: maintenance.condominium.name
+      };
+    }
+    
+    return maintenance;
   }
 
-  @UseGuards(JwtAuthGuard, WorkspaceIdAccessGuard)
-  @Delete(':workspaceId/condominiums/:condominiumId/maintenances/:maintenanceId')
-  deleteMaintenance(
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
+  @Delete(':id/condominiums/:condominiumId/maintenances/:maintenanceId')
+  async deleteMaintenance(
+    @Param('id', ParseIntPipe) workspaceId: number,
     @Param('condominiumId', ParseIntPipe) condominiumId: number,
     @Param('maintenanceId', ParseIntPipe) maintenanceId: number,
+    @CurrentUser() user: AuthUser
   ) {
-    return this.workspaceService.removeMaintenance(condominiumId, maintenanceId);
+    const result = await this.workspaceService.removeMaintenance(condominiumId, maintenanceId);
+    
+    if (result.deletedMaintenance) {
+      const maintenanceName = result.deletedMaintenance.name || 'Manutenção';
+      const condominiumName = result.deletedMaintenance.condominium?.name || 'Condomínio';
+      const entityName = `${maintenanceName} - ${condominiumName}`;
+      
+      await this.workspaceService.createActivityLog(
+        workspaceId,
+        user.userId,
+        ActivityType.MAINTENANCE_DELETED,
+        'Manutenção excluída:',
+        entityName,
+        maintenanceId
+      );
+    }
+    
+    return result.deleteResult;
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('update-overdue-maintenances')
   updateOverdueMaintenances(@CurrentUser() user: AuthUser) {
     return this.workspaceService.updateOverdueMaintenances();
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
+  @Get(':id/activities')
+  getRecentActivities(@Param('id', ParseIntPipe) id: number) {
+    return this.workspaceService.getRecentActivities(id, 10);
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceAccessGuard)
+  @Post(':id/activities/log')
+  async logActivity(
+    @Param('id', ParseIntPipe) workspaceId: number,
+    @Body() body: { type: string; description: string; entityName: string },
+    @CurrentUser() user: AuthUser
+  ) {
+    await this.workspaceService.createActivityLog(
+      workspaceId,
+      user.userId,
+      body.type as ActivityType,
+      body.description,
+      body.entityName
+    );
+    
+    return { success: true };
   }
 }

@@ -132,7 +132,7 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
         const selectedCondominiumData = condominiums.find(c => c.id === selectedCondominium);
         const monthName = months.find(m => m.value === selectedMonth)?.label;
 
-        generatePDF(filteredMaintenances, selectedCondominiumData?.name || 'Condomínio', monthName || '', selectedYear);
+        await generatePDF(filteredMaintenances, selectedCondominiumData?.name || 'Condomínio', monthName || '', selectedYear);
       } else {
         alert('Erro ao buscar manutenções. Tente novamente.');
       }
@@ -144,7 +144,31 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
     }
   };
 
-  const generatePDF = (maintenances: Maintenance[], condominiumName: string, monthName: string, year: string) => {
+  const logReportGeneration = async (condominiumName: string, monthName: string, year: string) => {
+    try {
+      const workspaceId = localStorage.getItem('workspaceId');
+      const token = localStorage.getItem('token');
+
+      if (!workspaceId || !token) return;
+
+      await fetch(`${baseUrl}/workspaces/${workspaceId}/activities/log`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type: 'report_generated',
+          description: 'Relatório mensal gerado para',
+          entityName: `${condominiumName} - ${monthName}/${year}`,
+        }),
+      });
+    } catch (error) {
+      console.error('Erro ao registrar atividade:', error);
+    }
+  };
+
+  const generatePDF = async (maintenances: Maintenance[], condominiumName: string, monthName: string, year: string) => {
     const doc = new jsPDF();
 
     doc.setFontSize(18);
@@ -195,6 +219,9 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
 
     const fileName = `relatorio_${condominiumName.replace(/\s+/g, '_')}_${monthName}_${year}.pdf`;
     doc.save(fileName);
+
+    // Log the report generation activity
+    await logReportGeneration(condominiumName, monthName, year);
 
     onClose();
   };

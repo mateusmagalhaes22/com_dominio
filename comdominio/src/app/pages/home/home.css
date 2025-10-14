@@ -120,25 +120,6 @@
     gap: 12px;
 }
 
-.home-activity-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-top: 8px;
-}
-
-.home-activity-dot.blue {
-    background-color: #3b82f6;
-}
-
-.home-activity-dot.green {
-    background-color: #22c55e;
-}
-
-.home-activity-dot.yellow {
-    background-color: #eab308;
-}
-
 .home-activity-content {
     flex: 1;
     min-width: 0;

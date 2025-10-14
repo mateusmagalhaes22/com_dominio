@@ -8,6 +8,8 @@ import { CondominiumDto } from 'src/workspaces/condominium/condominium-dto';
 import { Maintenance } from './condominium/maintenances/maintenance.entity';
 import { MaintenanceStatus } from './condominium/maintenances/maintenance-status.enum';
 import { RecurringPeriod } from './condominium/maintenances/recurring-period.enum';
+import { ActivityLog, ActivityType } from './activity-log/activity-log.entity';
+import { ActivityLogDto } from './activity-log/activity-log.dto';
 
 @Injectable()
 export class WorkspaceService {
@@ -24,6 +26,9 @@ export class WorkspaceService {
 
     @InjectRepository(Maintenance)
     private readonly maintenanceRepository: Repository<Maintenance>,
+
+    @InjectRepository(ActivityLog)
+    private readonly activityLogRepository: Repository<ActivityLog>,
   ) {}
 
   async create(adminUserId: number): Promise<Workspace> {
@@ -153,7 +158,6 @@ export class WorkspaceService {
   }
 
   updateCondominium(id: number, condominiumId: number, data: { name: string; cnpj: string; address: string; phone?: string; units?: number; }) {
-    // Check if there are any properties to update
     const updateData = { ...data };
     if (Object.keys(updateData).length === 0) {
       return this.condominiumRepository.findOne({ where: { id: condominiumId, workspace: { id } } });
@@ -175,21 +179,17 @@ export class WorkspaceService {
       throw new NotFoundException(`Condominium with ID ${condominiumId} not found`);
     }
 
-    // Handle endDate properly - convert string to Date if needed
     const processedData = { ...data };
     if (processedData.endDate) {
-      // Convert string to Date if it's a string
       if (typeof processedData.endDate === 'string') {
         processedData.endDate = new Date(processedData.endDate);
       }
       
-      // Check if the resulting Date is valid
       if (isNaN(processedData.endDate.getTime()) || processedData.endDate.toString() === 'Invalid Date') {
         processedData.endDate = undefined;
       }
     }
 
-    // Handle recurring fields properly
     if (!processedData.isRecurring) {
       processedData.recurringPeriod = undefined;
       processedData.nextRecurrenceDate = undefined;
@@ -202,7 +202,14 @@ export class WorkspaceService {
       condominium,
     });
 
-    return this.maintenanceRepository.save(maintenance);
+    const savedMaintenance = await this.maintenanceRepository.save(maintenance);
+    
+    const maintenanceWithCondominium = await this.maintenanceRepository.findOne({
+      where: { id: savedMaintenance.id },
+      relations: ['condominium']
+    });
+    
+    return maintenanceWithCondominium || savedMaintenance;
   }
 
   async findMaintenances(workspaceId: number, condominiumId: number, status?: string): Promise<Maintenance[]> {
@@ -253,21 +260,33 @@ export class WorkspaceService {
   }
 
   updateMaintenance(condominiumId: number, maintenanceId: number, data: Partial<Maintenance>) {
-    // Check if there are any properties to update
     const updateData = { ...data };
-    delete updateData.id; // Remove id from update data if present
+    delete updateData.id;
     
     if (Object.keys(updateData).length === 0) {
-      return this.maintenanceRepository.findOne({ where: { id: maintenanceId, condominium: { id: condominiumId } } });
+      return this.maintenanceRepository.findOne({ 
+        where: { id: maintenanceId, condominium: { id: condominiumId } },
+        relations: ['condominium']
+      });
     }
     
     return this.maintenanceRepository.update({ id: maintenanceId, condominium: { id: condominiumId } }, updateData).then(() => {
-      return this.maintenanceRepository.findOne({ where: { id: maintenanceId, condominium: { id: condominiumId } } });
+      return this.maintenanceRepository.findOne({ 
+        where: { id: maintenanceId, condominium: { id: condominiumId } },
+        relations: ['condominium']
+      });
     });
   }
 
-  removeMaintenance(condominiumId: number, maintenanceId: number) {
-    return this.maintenanceRepository.delete({ id: maintenanceId, condominium: { id: condominiumId } });
+  async removeMaintenance(condominiumId: number, maintenanceId: number) {
+    const maintenance = await this.maintenanceRepository.findOne({
+      where: { id: maintenanceId, condominium: { id: condominiumId } },
+      relations: ['condominium']
+    });
+    
+    const result = await this.maintenanceRepository.delete({ id: maintenanceId, condominium: { id: condominiumId } });
+    
+    return { deletedMaintenance: maintenance, deleteResult: result };
   }
 
   async findWorkspaceMaintenancesCount(workspaceId: number, status?: string): Promise<number> {
@@ -336,7 +355,27 @@ export class WorkspaceService {
       status: MaintenanceStatus.PENDENTE
     });
 
-    return this.maintenanceRepository.save(newMaintenance);
+    const savedMaintenance = await this.maintenanceRepository.save(newMaintenance);
+
+    // Log the automatic creation activity
+    // Use system user (id: 1) for automatic activities, or find the workspace admin
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: originalMaintenance.condominium.workspace.id },
+      relations: ['adminUser']
+    });
+
+    if (workspace && workspace.adminUser && workspace.id && workspace.adminUser.id) {
+      await this.createActivityLog(
+        workspace.id,
+        workspace.adminUser.id,
+        ActivityType.MAINTENANCE_AUTO_CREATED,
+        'Manutenção recorrente criada automaticamente:',
+        originalMaintenance.name as string,
+        savedMaintenance.id
+      );
+    }
+
+    return savedMaintenance;
   }
 
   async checkAndCreateRecurringMaintenances(): Promise<void> {
@@ -362,5 +401,46 @@ export class WorkspaceService {
         console.error(`Error creating recurring maintenance for ID ${maintenance.id}:`, error);
       }
     }
+  }
+
+  // Activity Log methods
+  async createActivityLog(
+    workspaceId: number,
+    userId: number,
+    type: ActivityType,
+    description: string,
+    entityName: string,
+    entityId?: number
+  ): Promise<void> {
+    try {
+      const workspace = await this.workspaceRepository.findOneBy({ id: workspaceId });
+      const user = await this.userRepository.findOneBy({ id: userId });
+
+      if (workspace && user) {
+        const activityLog = this.activityLogRepository.create({
+          type,
+          description,
+          entityName,
+          entityId,
+          workspace,
+          user
+        });
+
+        await this.activityLogRepository.save(activityLog);
+      }
+    } catch (error) {
+      console.error('Error creating activity log:', error);
+    }
+  }
+
+  async getRecentActivities(workspaceId: number, limit: number = 10): Promise<ActivityLogDto[]> {
+    const activities = await this.activityLogRepository.find({
+      where: { workspace: { id: workspaceId } },
+      relations: ['user', 'workspace'],
+      order: { createdAt: 'DESC' },
+      take: limit
+    });
+
+    return activities.map(activity => new ActivityLogDto(activity));
   }
 }

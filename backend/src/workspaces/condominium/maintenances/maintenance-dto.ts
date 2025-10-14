@@ -10,6 +10,10 @@ export class MaintenanceDto {
   @IsString()
   description: String;
 
+  @IsString()
+  @IsOptional()
+  condominiumName?: string;
+
   @IsOptional()
   @IsDate()
   endDate?: Date;
