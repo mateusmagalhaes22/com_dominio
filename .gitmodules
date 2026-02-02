@@ -1,0 +1,3 @@
+[submodule "com_dominio_frontend"]
+	path = com_dominio_frontend
+	url = https://github.com/mateusmagalhaes22/com_dominio_frontend.git
