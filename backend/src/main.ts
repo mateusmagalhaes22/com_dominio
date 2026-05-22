@@ -2,7 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-
+  const app = await NestFactory.create(AppModule);
+  
   // Configuração do CORS
   const corsOrigins = process.env.CORS_ORIGINS 
     ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
@@ -14,8 +15,6 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Status', 'Idempotency-Key'],
     credentials: true,
   });
-
-  const app = await NestFactory.create(AppModule);
 
   await app.listen(process.env.PORT ?? 8080);
 }
